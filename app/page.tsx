@@ -10,9 +10,8 @@ import RecentChip from "./_components/RecentChip";
 const USER_NAME = "Rauf";
 
 function greetingFor(hour: number): string {
-  if (hour < 5) return "Working late";
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
+  if (hour >= 5 && hour < 12) return "Good morning";
+  if (hour >= 12 && hour < 17) return "Good afternoon";
   return "Good evening";
 }
 
@@ -60,7 +59,7 @@ export default function Home() {
       <div className="ambient-glow" aria-hidden />
 
       {/* Device-frame wrapper — full width on mobile, centered phone on desktop */}
-      <div className="relative mx-auto flex min-h-[100svh] w-full max-w-[430px] flex-col md:my-6 md:min-h-[calc(100svh-48px)] md:max-w-[400px] md:overflow-hidden md:rounded-[36px] md:border md:border-border md:shadow-[0_8px_32px_rgba(58,48,127,0.20)] md:min-h-[820px]">
+      <div className="relative mx-auto flex h-[100svh] w-full max-w-[430px] flex-col overflow-hidden md:my-6 md:h-[820px] md:max-w-[400px] md:rounded-[36px] md:border md:border-border md:shadow-[0_8px_32px_rgba(58,48,127,0.20)]">
         {/* Header */}
         <header className="relative z-10 flex items-center justify-between px-4 pt-safe-4 pt-4 pb-3">
           <button
