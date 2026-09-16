@@ -5,7 +5,6 @@ import ThemeToggle from "./_components/ThemeToggle";
 import Composer from "./_components/Composer";
 import StarterCard from "./_components/StarterCard";
 import MarketSeed from "./_components/MarketSeed";
-import RecentChip from "./_components/RecentChip";
 
 const USER_NAME = "Rauf";
 
@@ -49,7 +48,6 @@ export default function Home() {
   function submit(text: string) {
     setPending(text);
     // TODO — navigate to /chat with initial message once Screen 2 is built
-    // For now, just visually acknowledge in the composer
     setTimeout(() => setPending(null), 900);
   }
 
@@ -61,7 +59,7 @@ export default function Home() {
       {/* Device-frame wrapper — full width on mobile, centered phone on desktop */}
       <div className="relative mx-auto flex h-[100svh] w-full max-w-[430px] flex-col overflow-hidden md:my-6 md:h-[820px] md:max-w-[400px] md:rounded-[36px] md:border md:border-border md:shadow-[0_8px_32px_rgba(58,48,127,0.20)]">
         {/* Header */}
-        <header className="relative z-10 flex items-center justify-between px-4 pt-safe-4 pt-4 pb-3">
+        <header className="relative z-10 flex items-center justify-between px-4 pt-4 pb-3">
           <button
             aria-label="Open menu"
             className="grid h-11 w-11 place-items-center rounded-full text-ink transition-colors hover:bg-accent-tint"
@@ -104,19 +102,12 @@ export default function Home() {
         </header>
 
         {/* Body — scrollable */}
-        <main className="relative z-10 flex-1 overflow-y-auto px-5 pb-[168px] pt-2">
-          {/* Recent conversation chip */}
-          <RecentChip
-            when="Yesterday"
-            title="3BR villa in Jumeirah under 5M, private pool"
-            onResume={() => submit("Resume the 3BR Jumeirah villa search")}
-          />
-
+        <main className="relative z-10 flex-1 overflow-y-auto px-5 pb-[136px] pt-4">
           {/* Greeting */}
-          <div className="mt-8 mb-1">
-            <h1 className="text-[34px] font-black leading-[1.05] tracking-tight text-ink">
+          <div className="mt-6 mb-1">
+            <h1 className="text-[34px] font-medium leading-[1.08] tracking-[-0.01em] text-ink">
               {greeting},{" "}
-              <span className="bg-gradient-to-r from-accent to-brand-mark bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-accent to-brand-mark bg-clip-text font-semibold text-transparent">
                 {USER_NAME}
               </span>
               .
@@ -127,9 +118,9 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Starter section */}
-          <SectionLabel className="mt-9">Or start with one of these</SectionLabel>
-          <div className="mt-3 flex flex-col gap-2">
+          {/* Starter chips */}
+          <SectionLabel className="mt-9">Or try</SectionLabel>
+          <div className="mt-3 flex flex-wrap gap-2">
             {STARTERS.map((text, i) => (
               <StarterCard
                 key={text}
@@ -152,18 +143,11 @@ export default function Home() {
               />
             ))}
           </div>
-
-          <p className="mt-8 text-center text-[11px] uppercase tracking-[0.14em] text-muted-2">
-            Scout is AI · Beta preview
-          </p>
         </main>
 
         {/* Composer — fixed inside the device frame */}
-        <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-5 pt-3 backdrop-blur-md">
+        <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-5 pt-3">
           <div className="pointer-events-none absolute inset-x-0 -top-8 h-8 bg-gradient-to-t from-bg to-transparent" />
-          <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-            Ask Scout
-          </p>
           <Composer pending={pending} onSubmit={submit} />
         </div>
       </div>
