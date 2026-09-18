@@ -72,22 +72,19 @@ export default function Landing({
           </span>
         </button>
 
-        {/* Scout presented as a Property Finder product */}
-        <div className="flex items-center gap-2.5">
+        {/* One lockup: Property Finder | Scout · Beta. Two files because the wordmark flips from ink to white.
+            Prototype only: tapping it opens the screen switcher, since phones have no rail. */}
+        <button
+          type="button"
+          onClick={onOpenScreens}
+          aria-label="Property Finder Scout, Beta. Open prototype screens"
+          className="grid h-11 place-items-center rounded-[10px] px-1 transition-transform active:scale-[0.98]"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/pf-logo.svg" alt="Property Finder" width={64} height={26} className="h-[26px] w-auto" draggable={false} />
-          <span className="h-5 w-px bg-border" aria-hidden />
-          <span className="text-[16px] font-semibold tracking-[-0.01em] text-ink">Scout</span>
-          {/* Prototype only: the Beta chip opens the screen switcher, since phones have no rail */}
-          <button
-            type="button"
-            onClick={onOpenScreens}
-            aria-label="Beta. Open prototype screens"
-            className="min-h-6 rounded-full bg-accent-tint px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.12em] text-accent transition-transform active:scale-95"
-          >
-            Beta
-          </button>
-        </div>
+          <img src="/pfs-logo-light.svg" alt="" width={138} height={36} className="logo-light h-9 w-auto" draggable={false} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/pfs-logo-dark.svg" alt="" width={138} height={36} className="logo-dark h-9 w-auto" draggable={false} />
+        </button>
 
         {/* Theme lives in the rail on desktop; on a phone it sits here */}
         <div className="h-11 w-11 min-[900px]:invisible">
