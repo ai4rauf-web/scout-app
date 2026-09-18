@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { SCREENS, type Screen } from "../_lib/types";
 import ThemeToggle from "./ThemeToggle";
 import Landing from "../_screens/Landing";
-import Placeholder from "../_screens/Placeholder";
 import TextSheet from "../_screens/TextSheet";
-import Answer, { type Turn } from "../_screens/Answer";
+import Answer, { type Turn, type Prov } from "../_screens/Answer";
+import History from "../_screens/History";
 import Voice, { HEARD_DEFAULT, cleanHeard } from "../_screens/Voice";
-import { pickScript, refineScript, type Refine } from "../_lib/scripts";
+import { pickScript, refineScript, unsayScript, type Refine } from "../_lib/scripts";
 
 const DEFAULT_Q = "New Emaar launches in Dubai South under 2M";
 let turnSeq = 1;
@@ -24,6 +24,7 @@ export default function Stage() {
   const [draft, setDraft] = useState("");
   const [heard, setHeard] = useState("");
   const [voiceKey, setVoiceKey] = useState(0);
+  const [prov, setProv] = useState<Prov | null>(null);
   // The text sheet sits over whichever full screen opened it
   const [base, setBase] = useState<"landing" | "answer">("landing");
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -43,6 +44,14 @@ export default function Stage() {
     return () => window.removeEventListener("resize", fit);
   }, []);
 
+  const findInferred = (list: Turn[]): Prov | null => {
+    for (let i = list.length - 1; i >= 0; i--) {
+      const seg = list[i].script.segs.findIndex((x) => "kind" in x && x.kind === "inferred");
+      if (seg >= 0 && list[i].done) return { turnId: list[i].id, seg };
+    }
+    return null;
+  };
+
   const makeTurn = (q: string, done = false): Turn => ({ id: turnSeq++, q, script: pickScript(q), done });
 
   const go = (s: Screen) => {
@@ -50,6 +59,16 @@ export default function Stage() {
     // Arriving at the answer with nothing asked yet: resume a finished thread
     if (s === "answer" && turns.length === 0) setTurns([makeTurn(DEFAULT_Q, true)]);
     if (s === "voice") { setHeard(""); setVoiceKey((k) => k + 1); }
+    if (s === "provenance") {
+      // Jumping here from the rail: open the card on the latest assumption, seeding a thread if needed
+      let list = turns;
+      let target = findInferred(list);
+      if (!target) { list = [makeTurn(DEFAULT_Q, true)]; setTurns(list); target = findInferred(list); }
+      setProv(target);
+      setBase("answer");
+    } else {
+      setProv(null);
+    }
     if (s === "confirm" && !heard) setHeard(HEARD_DEFAULT);
     setScreen(s);
   };
@@ -70,10 +89,18 @@ export default function Stage() {
   const refine = (turn: Turn, r: Refine) =>
     setTurns((t) => [...t, { id: turnSeq++, q: r.label, script: refineScript(turn.script, r), done: false }]);
 
+  const unsay = (turn: Turn, seg: number) => {
+    const next = unsayScript(turn.script, seg);
+    setProv(null);
+    setScreen("answer");
+    if (next) setTurns((t) => [...t, { id: turnSeq++, q: next.q, script: next.script, done: false }]);
+  };
+
   const markDone = (id: number) =>
     setTurns((t) => t.map((x) => (x.id === id ? { ...x, done: true } : x)));
 
   const newChat = () => {
+    setProv(null);
     setTurns([]);
     setDraft("");
     setBase("landing");
@@ -86,7 +113,8 @@ export default function Stage() {
   };
 
   const inVoice = screen === "voice" || screen === "confirm";
-  const showing = screen === "text" || inVoice ? base : screen;
+  const overlay = screen === "text" || screen === "history" || inVoice;
+  const showing = overlay ? base : screen === "provenance" ? "answer" : screen;
 
   return (
     <div ref={stageRef} className="stage text-ink">
@@ -174,10 +202,22 @@ export default function Stage() {
                 onFollowUp={() => go("text")}
                 onVoice={() => go("voice")}
                 onNewChat={newChat}
-                onProvenance={() => go("provenance")}
+                prov={prov}
+                onProvenance={(p) => { setProv(p); setScreen("provenance"); }}
+                onCloseProv={() => { setProv(null); setScreen("answer"); }}
+                onUnsay={unsay}
               />
             )}
-            {showing !== "landing" && showing !== "answer" && <Placeholder screen={showing} go={go} />}
+            {screen === "history" && (
+              <History
+                user="Rauf"
+                current={turns.length ? { title: turns[0].q, messages: turns.length * 2 } : null}
+                onClose={() => setScreen(base)}
+                onOpen={resume}
+                onOpenCurrent={() => go("answer")}
+                onNew={newChat}
+              />
+            )}
             {inVoice && (
               <Voice
                 key={voiceKey}

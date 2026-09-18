@@ -10,6 +10,10 @@ export type Seg =
   | { t: string; kind: "inferred"; from: string; why: string; without: number }
   | { t: string; kind: "cite" };
 
+export type Inferred = Extract<Seg, { kind: "inferred" }>;
+export const isInferred = (s: Seg | null | undefined): s is Inferred =>
+  !!s && "kind" in s && s.kind === "inferred";
+
 export type Listing = { name: string; meta: string; price: string; art: number };
 export type Refine = { label: string; delta: number };
 
@@ -179,6 +183,30 @@ export function refineScript(base: Script, r: Refine): Script {
     ],
     listings: [base.listings[1], base.listings[2], base.listings[0]],
     refine: base.refine.filter((x) => x.label !== r.label),
+  };
+}
+
+/** Unsay drops one assumption and re-answers without it. */
+export function unsayScript(base: Script, segIndex: number): { q: string; script: Script } | null {
+  const seg = base.segs[segIndex];
+  if (!seg || !("kind" in seg) || seg.kind !== "inferred") return null;
+  const diff = seg.without - base.count;
+  const change = diff === 0 ? "the same number" : `${diff > 0 ? "+" : "−"}${Math.abs(diff)}`;
+  return {
+    q: `Drop “${seg.t}”`,
+    script: {
+      ...base,
+      count: seg.without,
+      thinking: ["Removing that assumption", `Re-ranking ${seg.without} ${base.noun}`],
+      segs: [
+        { t: "Done. I’ve stopped assuming " },
+        { t: seg.t },
+        { t: ` — it wasn’t in your words. That leaves ${seg.without} ${base.noun} (${change}). Top of the list now ` },
+        cite(1), cite(2), cite(3),
+        { t: "." },
+      ],
+      listings: [base.listings[2], base.listings[0], base.listings[1]],
+    },
   };
 }
 
