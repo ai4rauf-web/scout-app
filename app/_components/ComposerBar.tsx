@@ -18,10 +18,13 @@ export default function ComposerBar({
   onField,
   onVoice,
   label,
+  chip = "EN",
 }: {
   onField: () => void;
   onVoice: () => void;
   label?: string;
+  /** The language Scout is currently replying in */
+  chip?: string;
 }) {
   const [i, setI] = useState(0);
   useEffect(() => {
@@ -36,13 +39,13 @@ export default function ComposerBar({
   return (
     <div className="flex items-center gap-1 rounded-full border border-border bg-bg-elev p-1 shadow-[var(--shadow-2)]">
       <span className="grid h-11 w-11 shrink-0 place-items-center text-[11px] font-bold tracking-[0.04em] text-accent">
-        EN
+        {chip}
       </span>
       <span className="h-6 w-px shrink-0 bg-border" aria-hidden />
       <button
         type="button"
         onClick={onField}
-        className="h-11 min-w-0 flex-1 truncate px-3 text-left text-[15px] text-muted"
+        className="h-11 min-w-0 flex-1 truncate px-3 text-start text-[15px] text-muted"
         dir={rtl ? "rtl" : "ltr"}
         aria-label="Ask Scout — type your question"
       >

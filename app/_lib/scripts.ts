@@ -4,6 +4,8 @@
  * stated it or Scout inferred it, and from which words.
  */
 
+import { STR, langOf, type Lang } from "./i18n";
+
 export type Seg =
   | { t: string }
   | { t: string; kind: "stated" }
@@ -19,6 +21,10 @@ export type Refine = { label: string; delta: number };
 
 export type Script = {
   id: string;
+  /** Language Scout replies in. Interface strings and direction follow it. */
+  lang: Lang;
+  /** The same answer in the thread's starting language, for "Reply in English instead". */
+  alt?: Script;
   count: number;
   noun: string;
   segs: Seg[];
@@ -31,6 +37,7 @@ const cite = (n: number): Seg => ({ t: String(n), kind: "cite" });
 
 const LAUNCH: Script = {
   id: "launch",
+  lang: "en",
   count: 12,
   noun: "launches",
   thinking: ["Reading your question", "Searching Property Finder", "Comparing 12 launches"],
@@ -71,6 +78,7 @@ const LAUNCH: Script = {
 
 const READY: Script = {
   id: "ready",
+  lang: "en",
   count: 176,
   noun: "apartments",
   thinking: ["Reading your question", "Searching Property Finder", "Ranking 176 apartments"],
@@ -109,6 +117,7 @@ const READY: Script = {
 
 const VILLA: Script = {
   id: "villa",
+  lang: "en",
   count: 84,
   noun: "villas",
   thinking: ["Reading your question", "Searching Property Finder", "Weighing 9 communities"],
@@ -143,9 +152,105 @@ const VILLA: Script = {
   ],
 };
 
+// ── A thread that changes language ─────────────────────────────────────────
+// What the user said earlier stays "stated" in every later language, and the
+// provenance card quotes their words in the script they were written in.
+
+const SEA_LISTINGS_EN: Listing[] = [
+  { name: "The Zen Tower", meta: "2 BR · 1,474 sqft · Ready", price: "AED 1.7M", img: "/listings/zen-tower.jpg" },
+  { name: "Marina Crown", meta: "2 BR · 1,494 sqft · Ready", price: "AED 1.9M", img: "/listings/marina-crown.jpg" },
+  { name: "Marina Diamond 2", meta: "2 BR · 1,355 sqft · Ready", price: "AED 1.6M", img: "/listings/marina-diamond.jpg" },
+];
+
+const SEA_EN: Script = {
+  id: "sea-en", lang: "en", count: 64, noun: "apartments",
+  thinking: ["Reading your question", "Searching Property Finder", "Filtering 64 apartments"],
+  segs: [
+    { t: "Done — added " }, { t: "sea view", kind: "stated" },
+    { t: ". There are 64 sea-view apartments in " }, { t: "Dubai Marina", kind: "stated" },
+    { t: ", " }, { t: "under 2M", kind: "stated" }, { t: " and " }, { t: "ready this year", kind: "stated" },
+    { t: ". I favoured " },
+    { t: "high floors", kind: "inferred", from: "海景", why: "Scout took “海景” (sea view) to mean high floors. You didn’t mention floors.", without: 97 },
+    { t: ". Three to start with " }, cite(1), cite(2), cite(3), { t: "." },
+  ],
+  listings: SEA_LISTINGS_EN,
+  refine: [{ label: "Widen budget to 2.2M", delta: 21 }, { label: "Furnished only", delta: -30 }, { label: "Avoid low floors", delta: -12 }],
+};
+
+const SEA_ZH: Script = {
+  id: "sea-zh", lang: "zh", count: 64, noun: "公寓",
+  thinking: ["正在理解你的问题", "正在搜索 Property Finder", "正在筛选 64 套公寓"],
+  segs: [
+    { t: "好的，已加上" }, { t: "海景", kind: "stated" },
+    { t: "。在" }, { t: "迪拜码头", kind: "stated" },
+    { t: "，" }, { t: "200万以下", kind: "stated" }, { t: "、" }, { t: "今年可入住", kind: "stated" },
+    { t: "的海景公寓共有 64 套。我优先选了" },
+    { t: "高楼层", kind: "inferred", from: "海景", why: "Scout 认为“海景”意味着高楼层。你并没有提到楼层。", without: 97 },
+    { t: "的房源。先看这三套 " }, cite(1), cite(2), cite(3), { t: "。" },
+  ],
+  listings: [
+    { name: "The Zen Tower", meta: "2 室 · 1,474 平方英尺 · 现房", price: "AED 1.7M", img: "/listings/zen-tower.jpg" },
+    { name: "Marina Crown", meta: "2 室 · 1,494 平方英尺 · 现房", price: "AED 1.9M", img: "/listings/marina-crown.jpg" },
+    { name: "Marina Diamond 2", meta: "2 室 · 1,355 平方英尺 · 现房", price: "AED 1.6M", img: "/listings/marina-diamond.jpg" },
+  ],
+  refine: [{ label: "预算放宽到 220 万", delta: 21 }, { label: "只看带家具的", delta: -30 }, { label: "避开低楼层", delta: -12 }],
+};
+SEA_ZH.alt = SEA_EN;
+SEA_EN.alt = SEA_ZH;
+
+const THREE_EN: Script = {
+  id: "three-en", lang: "en", count: 23, noun: "apartments",
+  thinking: ["Reading your question", "Searching Property Finder", "Ranking 23 apartments"],
+  segs: [
+    { t: "I found 23 " }, { t: "three-bedroom", kind: "stated" },
+    { t: " apartments in " }, { t: "Dubai Marina", kind: "stated" },
+    { t: " with a " }, { t: "sea view", kind: "stated" }, { t: ", " }, { t: "ready this year", kind: "stated" },
+    { t: ". " },
+    { t: "I raised the budget to 2.8M", kind: "inferred", from: "ثلاث غرف", why: "Earlier you said “under 2M”. Scout raised the budget on its own to find three-bedrooms. You didn’t ask for that.", without: 4 },
+    { t: ", because three-bedrooms are rare under 2M. Three of them " }, cite(1), cite(2), cite(3), { t: "." },
+  ],
+  listings: [
+    { name: "Marina Gate 1", meta: "3 BR · 1,890 sqft · Ready", price: "AED 2.7M", img: "/listings/marina-crown.jpg" },
+    { name: "Damac Heights", meta: "3 BR · 1,760 sqft · Ready", price: "AED 2.6M", img: "/listings/zen-tower.jpg" },
+    { name: "Marina Promenade", meta: "3 BR · 1,820 sqft · Ready", price: "AED 2.8M", img: "/listings/marina-diamond.jpg" },
+  ],
+  refine: [{ label: "Go back to under 2M", delta: -19 }, { label: "Two parking spaces", delta: -9 }, { label: "High floor only", delta: -11 }],
+};
+
+const THREE_AR: Script = {
+  id: "three-ar", lang: "ar", count: 23, noun: "شقة",
+  thinking: ["أقرأ سؤالك", "أبحث في بروبرتي فايندر", "أرتّب 23 شقة"],
+  segs: [
+    { t: "وجدت 23 شقة بـ" }, { t: "ثلاث غرف", kind: "stated" },
+    { t: " في " }, { t: "دبي مارينا", kind: "stated" },
+    { t: " بـ" }, { t: "إطلالة بحرية", kind: "stated" }, { t: "، " }, { t: "جاهزة هذا العام", kind: "stated" },
+    { t: ". " },
+    { t: "رفعتُ الميزانية إلى 2.8 مليون", kind: "inferred", from: "ثلاث غرف", why: "قلتَ سابقاً «under 2M». رفع سكاوت الميزانية من تلقاء نفسه ليجد شققاً بثلاث غرف. أنت لم تطلب ذلك.", without: 4 },
+    { t: " لأن شقق الثلاث غرف نادرة تحت 2 مليون. إليك ثلاثاً منها " }, cite(1), cite(2), cite(3), { t: "." },
+  ],
+  listings: [
+    { name: "Marina Gate 1", meta: "3 غرف · 1,890 قدم² · جاهزة", price: "AED 2.7M", img: "/listings/marina-crown.jpg" },
+    { name: "Damac Heights", meta: "3 غرف · 1,760 قدم² · جاهزة", price: "AED 2.6M", img: "/listings/zen-tower.jpg" },
+    { name: "Marina Promenade", meta: "3 غرف · 1,820 قدم² · جاهزة", price: "AED 2.8M", img: "/listings/marina-diamond.jpg" },
+  ],
+  refine: [{ label: "العودة إلى أقل من 2 مليون", delta: -19 }, { label: "موقفان للسيارات", delta: -9 }, { label: "طابق مرتفع فقط", delta: -11 }],
+};
+THREE_AR.alt = THREE_EN;
+THREE_EN.alt = THREE_AR;
+
+/** The three questions of the demo thread, in the order a person might ask them. */
+export const MULTI_THREAD = [
+  "Apartments in Dubai Marina under 2M, ready this year",
+  "要有海景的",
+  "وماذا عن شقق بثلاث غرف؟",
+];
+
 export const SCRIPTS: Record<string, Script> = { launch: LAUNCH, ready: READY, villa: VILLA };
 
 export function pickScript(q: string): Script {
+  const lang = langOf(q);
+  if (lang === "zh") return SEA_ZH;
+  if (lang === "ar") return THREE_AR;
   const s = q.toLowerCase();
   if (/villa|family|communit|school|فيلا/.test(s)) return VILLA;
   if (/ready|apartment|marina|jbr|furnish|شقة|公寓/.test(s)) {
@@ -164,22 +269,26 @@ export function pickScript(q: string): Script {
   return LAUNCH;
 }
 
-/** A refinement re-answers in place: same script, new count, reshuffled shortlist. */
+const DONE: Record<Lang, string> = { en: "Done — ", zh: "好的——", ar: "تم — " };
+const STOPPED: Record<Lang, string> = { en: "Done. I’ve stopped assuming ", zh: "好的，我不再假设", ar: "تم. لن أفترض " };
+const lowerFirst = (t: string, lang: Lang) => (lang === "en" ? t.charAt(0).toLowerCase() + t.slice(1) : t);
+
+/** A refinement re-answers in place, in the language of the turn it refines. */
 export function refineScript(base: Script, r: Refine): Script {
+  const L = STR[base.lang];
   const next = Math.max(3, base.count + r.delta);
-  const moved = r.delta === 0
-    ? `Same ${base.count} ${base.noun}, now sorted by the lightest payment plan`
-    : `That takes you from ${base.count} to ${next} ${base.noun}`;
+  const tail = r.delta === 0 ? L.resorted(r.label, base.count, base.noun) : L.refined(r.label, base.count, next, base.noun);
   return {
     ...base,
+    alt: undefined,
     count: next,
-    thinking: ["Applying your change", `Re-ranking ${next} ${base.noun}`],
+    thinking: L.thinkingRefine(next, base.noun),
     segs: [
-      { t: "Done — " },
-      { t: r.label.charAt(0).toLowerCase() + r.label.slice(1), kind: "stated" },
-      { t: `. ${moved}. Top of the list now ` },
+      { t: DONE[base.lang] },
+      { t: lowerFirst(r.label, base.lang), kind: "stated" },
+      { t: tail },
       cite(1), cite(2), cite(3),
-      { t: "." },
+      { t: base.lang === "zh" ? "。" : "." },
     ],
     listings: [base.listings[1], base.listings[2], base.listings[0]],
     refine: base.refine.filter((x) => x.label !== r.label),
@@ -189,21 +298,23 @@ export function refineScript(base: Script, r: Refine): Script {
 /** Unsay drops one assumption and re-answers without it. */
 export function unsayScript(base: Script, segIndex: number): { q: string; script: Script } | null {
   const seg = base.segs[segIndex];
-  if (!seg || !("kind" in seg) || seg.kind !== "inferred") return null;
+  if (!isInferred(seg)) return null;
+  const L = STR[base.lang];
   const diff = seg.without - base.count;
-  const change = diff === 0 ? "the same number" : `${diff > 0 ? "+" : "−"}${Math.abs(diff)}`;
+  const change = diff === 0 ? L.same : `${diff > 0 ? "+" : "−"}${Math.abs(diff)}`;
   return {
-    q: `Drop “${seg.t}”`,
+    q: L.dropTitle(seg.t),
     script: {
       ...base,
+      alt: undefined,
       count: seg.without,
-      thinking: ["Removing that assumption", `Re-ranking ${seg.without} ${base.noun}`],
+      thinking: L.thinkingUnsay(seg.without, base.noun),
       segs: [
-        { t: "Done. I’ve stopped assuming " },
-        { t: seg.t },
-        { t: ` — it wasn’t in your words. That leaves ${seg.without} ${base.noun} (${change}). Top of the list now ` },
+        { t: STOPPED[base.lang] },
+        { t: L.quote(seg.t) },
+        { t: L.unsaid(seg.t, seg.without, base.noun, change) },
         cite(1), cite(2), cite(3),
-        { t: "." },
+        { t: base.lang === "zh" ? "。" : "." },
       ],
       listings: [base.listings[2], base.listings[0], base.listings[1]],
     },
@@ -218,6 +329,9 @@ export const SUGGESTIONS = [
   "Compare Marina vs JBR for a 2BR",
   "Rental yield in Business Bay",
 ];
+
+/** Offered in the follow-up sheet, so the language switch is one tap away in a demo. */
+export const FOLLOW_UPS = ["要有海景的", "وماذا عن شقق بثلاث غرف؟", "Compare Marina vs JBR for a 2BR"];
 
 export function detectLang(text: string): string {
   if (/[؀-ۿ]/.test(text)) return "AR";

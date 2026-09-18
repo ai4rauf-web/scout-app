@@ -8,7 +8,8 @@ import TextSheet from "../_screens/TextSheet";
 import Answer, { type Turn, type Prov } from "../_screens/Answer";
 import History from "../_screens/History";
 import Voice, { HEARD_DEFAULT, cleanHeard } from "../_screens/Voice";
-import { pickScript, refineScript, unsayScript, type Refine } from "../_lib/scripts";
+import { pickScript, refineScript, unsayScript, MULTI_THREAD, type Refine } from "../_lib/scripts";
+import { langOf } from "../_lib/i18n";
 
 const DEFAULT_Q = "New Emaar launches in Dubai South under 2M";
 let turnSeq = 1;
@@ -25,6 +26,8 @@ export default function Stage() {
   const [heard, setHeard] = useState("");
   const [voiceKey, setVoiceKey] = useState(0);
   const [prov, setProv] = useState<Prov | null>(null);
+  // "Reply in English instead" holds for the rest of the thread until undone
+  const [replyLock, setReplyLock] = useState<null | "en">(null);
   // The text sheet sits over whichever full screen opened it
   const [base, setBase] = useState<"landing" | "answer">("landing");
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -52,13 +55,31 @@ export default function Stage() {
     return null;
   };
 
-  const makeTurn = (q: string, done = false): Turn => ({ id: turnSeq++, q, script: pickScript(q), done });
+  const makeTurn = (q: string, done = false, lock: null | "en" = replyLock): Turn => {
+    const native = pickScript(q);
+    const script = lock === "en" && native.lang !== "en" && native.alt ? native.alt : native;
+    return { id: turnSeq++, q, qLang: langOf(q), script, done };
+  };
+
+  // Swap one turn between the user's language and English, and remember the choice
+  const toggleLang = (turn: Turn) => {
+    const alt = turn.script.alt;
+    if (!alt) return;
+    setReplyLock(alt.lang === "en" ? "en" : null);
+    setTurns((t) => t.map((x) => (x.id === turn.id ? { ...x, id: turnSeq++, script: alt, done: false, unsaid: [] } : x)));
+  };
 
   const go = (s: Screen) => {
     if (s === "landing" || s === "answer") setBase(s);
     // Arriving at the answer with nothing asked yet: resume a finished thread
     if (s === "answer" && turns.length === 0) setTurns([makeTurn(DEFAULT_Q, true)]);
     if (s === "voice") { setHeard(""); setVoiceKey((k) => k + 1); }
+    if (s === "multi") {
+      // The demo thread: English, then Chinese, then Arabic, already answered
+      setReplyLock(null);
+      setTurns(MULTI_THREAD.map((q) => makeTurn(q, true, null)));
+      setBase("answer");
+    }
     if (s === "provenance") {
       // Jumping here from the rail: open the card on the latest assumption, seeding a thread if needed
       let list = turns;
@@ -87,7 +108,7 @@ export default function Stage() {
   };
 
   const refine = (turn: Turn, r: Refine) =>
-    setTurns((t) => [...t, { id: turnSeq++, q: r.label, script: refineScript(turn.script, r), done: false }]);
+    setTurns((t) => [...t, { id: turnSeq++, q: r.label, qLang: turn.qLang, derived: true, script: refineScript(turn.script, r), done: false }]);
 
   const unsay = (turn: Turn, seg: number) => {
     const next = unsayScript(turn.script, seg);
@@ -96,7 +117,7 @@ export default function Stage() {
     if (next) {
       setTurns((t) => [
         ...t.map((x) => (x.id === turn.id ? { ...x, unsaid: [...(x.unsaid ?? []), seg] } : x)),
-        { id: turnSeq++, q: next.q, script: next.script, done: false },
+        { id: turnSeq++, q: next.q, qLang: turn.qLang, derived: true, script: next.script, done: false },
       ]);
     }
   };
@@ -106,6 +127,7 @@ export default function Stage() {
 
   const newChat = () => {
     setProv(null);
+    setReplyLock(null);
     setTurns([]);
     setDraft("");
     setBase("landing");
@@ -119,7 +141,7 @@ export default function Stage() {
 
   const inVoice = screen === "voice" || screen === "confirm";
   const overlay = screen === "text" || screen === "history" || inVoice;
-  const showing = overlay ? base : screen === "provenance" ? "answer" : screen;
+  const showing = overlay ? base : screen === "provenance" || screen === "multi" ? "answer" : screen;
 
   return (
     <div ref={stageRef} className="stage text-ink">
@@ -211,6 +233,7 @@ export default function Stage() {
                 onProvenance={(p) => { setProv(p); setScreen("provenance"); }}
                 onCloseProv={() => { setProv(null); setScreen("answer"); }}
                 onUnsay={unsay}
+                onToggleLang={toggleLang}
               />
             )}
             {screen === "history" && (

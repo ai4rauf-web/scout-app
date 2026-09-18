@@ -209,6 +209,9 @@ html, body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* Arabic is a joined script: letter-spacing pulls the letters apart, so it is never tracked */
+[lang="ar"], [lang="ar"] * { letter-spacing: 0 !important; }
+
 /* Text fields show focus with the caret, not a ring */
 input:focus-visible, textarea:focus-visible { outline: none; }
 

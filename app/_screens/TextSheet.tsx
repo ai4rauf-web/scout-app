@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SUGGESTIONS, detectLang } from "../_lib/scripts";
+import { SUGGESTIONS, FOLLOW_UPS, detectLang } from "../_lib/scripts";
 import { FillArrow, WaveformIcon, SimKeyboard } from "../_components/Chrome";
 
 const PLACEHOLDERS = ["Ask Scout…", "اسأل سكاوت…", "问问 Scout…", "Ask about any community…"];
@@ -84,11 +84,11 @@ export default function TextSheet({
 
   const rows = useMemo(() => {
     const q = draft.trim().toLowerCase();
-    if (!q) return SUGGESTIONS.slice(0, 5);
+    if (!q) return followUp ? FOLLOW_UPS : SUGGESTIONS.slice(0, 5);
     const words = q.split(/\s+/).filter((w) => w.length > 2);
     const hits = SUGGESTIONS.filter((s) => words.some((w) => s.toLowerCase().includes(w)));
     return hits.slice(0, 4);
-  }, [draft]);
+  }, [draft, followUp]);
 
   const placeholder = followUp ? "Ask a follow-up…" : PLACEHOLDERS[ph];
 
@@ -150,7 +150,7 @@ export default function TextSheet({
         <ul className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pt-1">
           {rows.map((r) => (
             <li key={r} className="flex items-center border-b border-border/70 last:border-b-0">
-              <button type="button" onClick={() => send(r)} className="min-w-0 flex-1 py-3.5 text-left text-[14px] text-ink-2 transition-colors hover:text-ink">
+              <button type="button" dir="auto" onClick={() => send(r)} className="min-w-0 flex-1 py-3.5 text-start text-[15px] text-ink-2 transition-colors hover:text-ink">
                 {r}
               </button>
               <button

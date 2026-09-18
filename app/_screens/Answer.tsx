@@ -3,11 +3,22 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { Go } from "../_lib/types";
 import { isInferred, type Inferred, type Refine, type Script, type Seg } from "../_lib/scripts";
+import { STR, chipLabel, isRtl, langName, type Lang } from "../_lib/i18n";
 import { StatusBar } from "../_components/Chrome";
 import ComposerBar from "../_components/ComposerBar";
 import ListingPhoto from "../_components/ListingPhoto";
 
-export type Turn = { id: number; q: string; script: Script; done: boolean; unsaid?: number[] };
+export type Turn = {
+  id: number;
+  q: string;
+  /** Language the user wrote in — may differ from the reply language when they lock replies to English. */
+  qLang: Lang;
+  script: Script;
+  done: boolean;
+  unsaid?: number[];
+  /** Refine / Unsay turns inherit their parent's language and never announce a switch. */
+  derived?: boolean;
+};
 export type Prov = { turnId: number; seg: number };
 
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
@@ -15,7 +26,7 @@ const totalChars = (segs: Seg[]) => segs.reduce((n, s) => n + s.t.length, 0);
 const DIM = "transition-opacity duration-200";
 
 export default function Answer({
-  turns, prov, go, onTurnDone, onRefine, onFollowUp, onVoice, onNewChat, onProvenance, onCloseProv, onUnsay,
+  turns, prov, go, onTurnDone, onRefine, onFollowUp, onVoice, onNewChat, onProvenance, onCloseProv, onUnsay, onToggleLang,
 }: {
   turns: Turn[];
   prov: Prov | null;
@@ -28,12 +39,17 @@ export default function Answer({
   onProvenance: (p: Prov) => void;
   onCloseProv: () => void;
   onUnsay: (turn: Turn, seg: number) => void;
+  onToggleLang: (turn: Turn) => void;
 }) {
   const [saved, setSaved] = useState(false);
+  // The chrome speaks the language of the latest reply; earlier turns keep their own
+  const current: Lang = turns.length ? turns[turns.length - 1].script.lang : "en";
+  const home: Lang = turns.length ? turns[0].qLang : "en";
   const dim = prov !== null;
 
   return (
     <div
+      dir={isRtl(current) ? "rtl" : "ltr"}
       className="absolute inset-0 flex flex-col"
       // While the card is open, a tap anywhere else only dismisses it
       onClickCapture={(e) => {
@@ -49,7 +65,7 @@ export default function Answer({
       <StatusBar />
 
       <header className={`relative z-10 flex h-14 shrink-0 items-center justify-between px-3 pt-[env(safe-area-inset-top)] ${DIM} ${dim ? "opacity-25" : ""}`}>
-        <IconBtn label="Back" onClick={() => go("landing")}><polyline points="15 18 9 12 15 6" /></IconBtn>
+        <IconBtn label="Back" onClick={() => go("landing")} flip><polyline points="15 18 9 12 15 6" /></IconBtn>
         <div className="flex items-center">
           <IconBtn label={saved ? "Saved" : "Save this search"} onClick={() => setSaved((v) => !v)} active={saved}>
             <path d="M6 4h12v17l-6-4-6 4z" fill={saved ? "currentColor" : "none"} />
@@ -67,6 +83,9 @@ export default function Answer({
             turn={t}
             first={i === 0}
             latest={i === turns.length - 1}
+            prevQLang={i > 0 ? turns[i - 1].qLang : null}
+            home={home}
+            onToggleLang={() => onToggleLang(t)}
             dim={dim}
             activeSeg={prov?.turnId === t.id ? prov.seg : null}
             onDone={() => onTurnDone(t.id)}
@@ -81,7 +100,7 @@ export default function Answer({
       <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-3 min-[900px]:pb-7">
         <div className="pointer-events-none absolute inset-x-0 -top-6 bottom-0 bg-gradient-to-t from-bg via-bg/95 to-transparent" aria-hidden />
         <div className={`relative ${DIM} ${dim ? "opacity-25" : ""}`}>
-          <ComposerBar label="Ask a follow-up…" onField={onFollowUp} onVoice={onVoice} />
+          <ComposerBar label={STR[current].followUp} chip={chipLabel[current]} onField={onFollowUp} onVoice={onVoice} />
         </div>
       </div>
     </div>
@@ -89,13 +108,16 @@ export default function Answer({
 }
 
 function TurnBlock({
-  turn, first, latest, dim, activeSeg, onDone, onRefine, onProvenance, onCloseProv, onUnsay,
+  turn, first, latest, prevQLang, home, onToggleLang, dim, activeSeg, onDone, onRefine, onProvenance, onCloseProv, onUnsay,
 }: {
   turn: Turn; first: boolean; latest: boolean; dim: boolean; activeSeg: number | null;
+  prevQLang: Lang | null; home: Lang; onToggleLang: () => void;
   onDone: () => void; onRefine: (r: Refine) => void; onProvenance: (seg: number) => void;
   onCloseProv: () => void; onUnsay: (seg: number) => void;
 }) {
   const { script } = turn;
+  const L = STR[script.lang];
+  const switched = !turn.derived && prevQLang !== null && prevQLang !== turn.qLang;
   const total = totalChars(script.segs);
   const [phase, setPhase] = useState<"thinking" | "streaming" | "done">(turn.done ? "done" : "thinking");
   const [shown, setShown] = useState(turn.done ? total : 0);
@@ -134,15 +156,23 @@ function TurnBlock({
   const active = activeSeg !== null ? script.segs[activeSeg] : null;
 
   return (
-    <article ref={ref} className={`relative scroll-mt-2 px-5 ${first ? "pt-3" : "mt-8 border-t border-border pt-7"}`}>
+    <article
+      ref={ref}
+      lang={script.lang}
+      dir={isRtl(script.lang) ? "rtl" : "ltr"}
+      className={`relative scroll-mt-2 px-5 ${first ? "pt-3" : "mt-8 border-t border-border pt-7"}`}
+    >
+      {switched && (
+        <LangMarker turn={turn} home={home} onToggle={onToggleLang} className={`${DIM} ${off}`} />
+      )}
       <h1 dir="auto" className={`font-semibold tracking-[-0.02em] text-ink ${DIM} ${off} ${first ? "text-[24px] leading-[1.2]" : "text-[19px] leading-[1.25]"}`}>
         {turn.q}
       </h1>
 
       <div className={`mt-4 flex gap-2 ${DIM} ${off}`}>
-        <Chip active={tab === "listings"} onClick={() => setTab("listings")}>Listings <span className="tabular-nums opacity-70">· {script.count}</span></Chip>
-        <Chip active={tab === "map"} onClick={() => setTab("map")}>Map</Chip>
-        <Chip active={tab === "sources"} onClick={() => setTab("sources")}>Sources</Chip>
+        <Chip active={tab === "listings"} onClick={() => setTab("listings")}>{L.listings} <span className="tabular-nums opacity-70">· {script.count}</span></Chip>
+        <Chip active={tab === "map"} onClick={() => setTab("map")}>{L.map}</Chip>
+        <Chip active={tab === "sources"} onClick={() => setTab("sources")}>{L.sources}</Chip>
       </div>
 
       {phase === "thinking" && (
@@ -160,15 +190,15 @@ function TurnBlock({
 
       {/* Provenance card — sits right under the prose it explains */}
       {isInferred(active) && activeSeg !== null && (
-        <ProvCard seg={active} noun={script.noun} count={script.count} onKeep={onCloseProv} onUnsay={() => onUnsay(activeSeg)} />
+        <ProvCard seg={active} lang={script.lang} noun={script.noun} count={script.count} onKeep={onCloseProv} onUnsay={() => onUnsay(activeSeg)} />
       )}
 
       {phase === "done" && (
         <>
           {hasInferred && (
             <p className={`rise mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted ${DIM} ${off}`} style={d(40)}>
-              <span className="flex items-center gap-1.5"><i className="inline-block h-[2.5px] w-5 bg-stated" /> you said</span>
-              <span className="flex items-center gap-1.5"><i className="inline-block w-5 border-b-[1.5px] border-dashed border-inferred" /> Scout assumed · hold to check</span>
+              <span className="flex items-center gap-1.5"><i className="inline-block h-[2.5px] w-5 bg-stated" /> {L.youSaid}</span>
+              <span className="flex items-center gap-1.5"><i className="inline-block w-5 border-b-[1.5px] border-dashed border-inferred" /> {L.assumed}</span>
             </p>
           )}
 
@@ -178,7 +208,7 @@ function TurnBlock({
                 <div key={l.name} className="w-[228px] shrink-0 snap-start overflow-hidden rounded-[16px] border border-border bg-bg-elev shadow-[var(--shadow-1)]">
                   <div className="relative h-[112px]">
                     <ListingPhoto src={l.img} alt={l.name} />
-                    <span className="absolute left-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] font-bold tabular-nums text-bg">{i + 1}</span>
+                    <span className="absolute start-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] font-bold tabular-nums text-bg">{i + 1}</span>
                   </div>
                   <div className="px-3 pb-3 pt-2.5">
                     <p className="truncate text-[13px] font-semibold text-ink">{l.name}</p>
@@ -192,19 +222,19 @@ function TurnBlock({
 
           {latest && (
             <div className={`rise mt-4 flex items-center gap-1 text-muted ${DIM} ${off}`} style={d(160)}>
-              <Action label="Compare"><rect x="4" y="5" width="6" height="14" rx="1.5" /><rect x="14" y="5" width="6" height="14" rx="1.5" /></Action>
-              <Action label="Listen"><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="3" y="14" width="4" height="6" rx="1.5" /><rect x="17" y="14" width="4" height="6" rx="1.5" /></Action>
-              <Action label="Copy"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></Action>
+              <Action label={L.compare}><rect x="4" y="5" width="6" height="14" rx="1.5" /><rect x="14" y="5" width="6" height="14" rx="1.5" /></Action>
+              <Action label={L.listen}><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="3" y="14" width="4" height="6" rx="1.5" /><rect x="17" y="14" width="4" height="6" rx="1.5" /></Action>
+              <Action label={L.copy}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></Action>
             </div>
           )}
 
           {latest && script.refine.length > 0 && (
             <section className={`rise mt-7 ${DIM} ${off}`} style={d(220)}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">Refine</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">{L.refine}</p>
               <ul className="mt-1">
                 {script.refine.map((r) => (
                   <li key={r.label} className="border-b border-border last:border-b-0">
-                    <button type="button" onClick={() => onRefine(r)} className="group flex w-full items-center justify-between gap-3 py-3.5 text-left">
+                    <button type="button" onClick={() => onRefine(r)} className="group flex w-full items-center justify-between gap-3 py-3.5 text-start">
                       <span className="text-[14px] text-ink-2 transition-colors group-hover:text-ink">{r.label}</span>
                       <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-accent transition-colors group-hover:bg-accent-tint">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
@@ -288,15 +318,16 @@ function Held({
 }
 
 function ProvCard({
-  seg, noun, count, onKeep, onUnsay,
+  seg, lang, noun, count, onKeep, onUnsay,
 }: {
-  seg: Inferred;
+  seg: Inferred; lang: Lang;
   noun: string; count: number;
   onKeep: () => void; onUnsay: () => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [caret, setCaret] = useState<number | null>(null);
   const diff = seg.without - count;
+  const L = STR[lang];
 
   // Point the caret at the held phrase and make sure the card is in view
   useLayoutEffect(() => {
@@ -319,23 +350,23 @@ function ProvCard({
       {caret !== null && (
         <span className="absolute -top-[7px] h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-border bg-bg-elev" style={{ left: caret }} aria-hidden />
       )}
-      <div className="relative overflow-hidden rounded-[16px] py-4 pl-5 pr-4">
-        <span className="absolute inset-y-0 left-0 w-1 bg-inferred" aria-hidden />
-        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">Scout assumed this from</p>
-        <p className="mt-1.5 text-[15px] font-semibold text-ink">“{seg.from}”</p>
+      <div className="relative overflow-hidden rounded-[16px] py-4 pe-4 ps-5">
+        <span className="absolute inset-y-0 start-0 w-1 bg-inferred" aria-hidden />
+        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">{L.provFrom}</p>
+        <p dir="auto" className="mt-1.5 text-start text-[15px] font-semibold text-ink">{L.quote(seg.from)}</p>
         <p className="mt-2 text-[13px] leading-[1.5] text-ink-2">{seg.why}</p>
 
         <div className="mt-4 flex items-center gap-2">
           <button type="button" onClick={onUnsay} className="h-10 rounded-full bg-accent px-4 text-[13px] font-semibold text-bg shadow-[var(--shadow-2)] transition-transform active:scale-95">
-            Unsay “{seg.t}”
+            {L.unsay(seg.t)}
           </button>
           <button type="button" onClick={onKeep} className="h-10 rounded-full px-3 text-[13px] font-semibold text-muted transition-colors hover:text-ink">
-            Keep it
+            {L.keep}
           </button>
         </div>
 
         <p className="mt-3 rounded-[10px] bg-accent-tint px-3 py-2 text-[12px] font-medium text-accent">
-          Without it: <span className="tabular-nums">{seg.without}</span> {noun}
+          {L.without} <span className="tabular-nums">{seg.without}</span> {noun}
           <span className="tabular-nums opacity-80"> · {diff >= 0 ? "+" : "−"}{Math.abs(diff)}</span>
         </p>
       </div>
@@ -352,10 +383,10 @@ function Chip({ children, active, onClick }: { children: React.ReactNode; active
   );
 }
 
-function IconBtn({ children, label, onClick, active }: { children: React.ReactNode; label: string; onClick?: () => void; active?: boolean }) {
+function IconBtn({ children, label, onClick, active, flip }: { children: React.ReactNode; label: string; onClick?: () => void; active?: boolean; flip?: boolean }) {
   return (
     <button type="button" aria-label={label} onClick={onClick} className={`grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-accent-tint active:scale-95 ${active ? "text-accent" : "text-ink"}`}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{children}</svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={flip ? "rtl:-scale-x-100" : ""} aria-hidden>{children}</svg>
     </button>
   );
 }
@@ -366,5 +397,28 @@ function Action({ children, label }: { children: React.ReactNode; label: string 
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{children}</svg>
       {label}
     </button>
+  );
+}
+
+/**
+ * Marks the point where the conversation changed language. Scout follows
+ * silently; this is the one-tap way back to the language the thread began in.
+ */
+function LangMarker({ turn, home, onToggle, className }: { turn: Turn; home: Lang; onToggle: () => void; className: string }) {
+  const native = turn.script.lang === turn.qLang;
+  const canToggle = !!turn.script.alt && home === "en" && turn.qLang !== "en";
+  return (
+    <div dir="ltr" className={`mb-5 flex items-center gap-3 text-[11px] text-muted ${className}`}>
+      <span className="h-px flex-1 bg-border" aria-hidden />
+      <span lang={native ? turn.qLang : "en"} className="font-medium">
+        {native ? STR[turn.qLang].switched : "Replying in English"}
+      </span>
+      {canToggle && (
+        <button type="button" onClick={onToggle} className="font-semibold text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent">
+          {native ? "Reply in English instead" : `Follow my language · ${langName[turn.qLang]}`}
+        </button>
+      )}
+      <span className="h-px flex-1 bg-border" aria-hidden />
+    </div>
   );
 }
