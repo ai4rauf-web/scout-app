@@ -46,7 +46,7 @@ export default function Stage() {
 
   const findInferred = (list: Turn[]): Prov | null => {
     for (let i = list.length - 1; i >= 0; i--) {
-      const seg = list[i].script.segs.findIndex((x) => "kind" in x && x.kind === "inferred");
+      const seg = list[i].script.segs.findIndex((x, n) => "kind" in x && x.kind === "inferred" && !(list[i].unsaid ?? []).includes(n));
       if (seg >= 0 && list[i].done) return { turnId: list[i].id, seg };
     }
     return null;
@@ -93,7 +93,12 @@ export default function Stage() {
     const next = unsayScript(turn.script, seg);
     setProv(null);
     setScreen("answer");
-    if (next) setTurns((t) => [...t, { id: turnSeq++, q: next.q, script: next.script, done: false }]);
+    if (next) {
+      setTurns((t) => [
+        ...t.map((x) => (x.id === turn.id ? { ...x, unsaid: [...(x.unsaid ?? []), seg] } : x)),
+        { id: turnSeq++, q: next.q, script: next.script, done: false },
+      ]);
+    }
   };
 
   const markDone = (id: number) =>

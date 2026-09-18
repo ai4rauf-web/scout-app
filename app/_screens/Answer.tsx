@@ -7,7 +7,7 @@ import { StatusBar } from "../_components/Chrome";
 import ComposerBar from "../_components/ComposerBar";
 import ListingArt from "../_components/ListingArt";
 
-export type Turn = { id: number; q: string; script: Script; done: boolean };
+export type Turn = { id: number; q: string; script: Script; done: boolean; unsaid?: number[] };
 export type Prov = { turnId: number; seg: number };
 
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
@@ -78,9 +78,9 @@ export default function Answer({
         ))}
       </main>
 
-      <div className={`absolute inset-x-0 bottom-0 z-20 px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-3 min-[900px]:pb-7 ${DIM} ${dim ? "opacity-25" : ""}`}>
+      <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-3 min-[900px]:pb-7">
         <div className="pointer-events-none absolute inset-x-0 -top-6 bottom-0 bg-gradient-to-t from-bg via-bg/95 to-transparent" aria-hidden />
-        <div className="relative">
+        <div className={`relative ${DIM} ${dim ? "opacity-25" : ""}`}>
           <ComposerBar label="Ask a follow-up…" onField={onFollowUp} onVoice={onVoice} />
         </div>
       </div>
@@ -154,7 +154,7 @@ function TurnBlock({
 
       {phase !== "thinking" && (
         <p dir="auto" className={`mt-5 text-[16px] leading-[1.6] text-ink ${phase === "streaming" ? "cursor-blink" : ""}`}>
-          <Prose segs={script.segs} shown={shown} dim={dim} activeSeg={activeSeg} onProvenance={onProvenance} />
+          <Prose segs={script.segs} shown={shown} dim={dim} activeSeg={activeSeg} unsaid={turn.unsaid ?? []} onProvenance={onProvenance} />
         </p>
       )}
 
@@ -223,8 +223,8 @@ function TurnBlock({
 
 /** Reveals segments up to `shown` characters. With the card open, everything but the held phrase recedes. */
 function Prose({
-  segs, shown, dim, activeSeg, onProvenance,
-}: { segs: Seg[]; shown: number; dim: boolean; activeSeg: number | null; onProvenance: (i: number) => void }) {
+  segs, shown, dim, activeSeg, unsaid, onProvenance,
+}: { segs: Seg[]; shown: number; dim: boolean; activeSeg: number | null; unsaid: number[]; onProvenance: (i: number) => void }) {
   let left = shown;
   return (
     <>
@@ -242,6 +242,8 @@ function Prose({
           );
         }
         if (s.kind === "stated") return <span key={i} className={`prov-stated ${DIM} ${off}`}>{text}</span>;
+        // An assumption the user dropped stays visible, struck out — the old answer no longer claims it
+        if (unsaid.includes(i)) return <span key={i} className={`text-muted-2 line-through decoration-muted-2 ${DIM} ${off}`}>{text}</span>;
         return <Held key={i} lifted={i === activeSeg} className={`${DIM} ${off}`} onHold={() => onProvenance(i)}>{text}</Held>;
       })}
     </>
