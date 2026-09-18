@@ -144,7 +144,19 @@ export const SCRIPTS: Record<string, Script> = { launch: LAUNCH, ready: READY, v
 export function pickScript(q: string): Script {
   const s = q.toLowerCase();
   if (/villa|family|communit|school|فيلا/.test(s)) return VILLA;
-  if (/ready|apartment|marina|jbr|furnish|شقة|公寓/.test(s)) return READY;
+  if (/ready|apartment|marina|jbr|furnish|شقة|公寓/.test(s)) {
+    // If the user named the area, it is stated — never present it as an assumption.
+    const area = /marina/.test(s) ? "Dubai Marina" : /jbr/.test(s) ? "JBR" : null;
+    if (!area) return READY;
+    return {
+      ...READY,
+      segs: READY.segs.map((seg) =>
+        "kind" in seg && seg.kind === "inferred" && seg.t === "Dubai Marina and JBR"
+          ? { t: area, kind: "stated" as const }
+          : seg,
+      ),
+    };
+  }
   return LAUNCH;
 }
 

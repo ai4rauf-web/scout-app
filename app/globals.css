@@ -209,6 +209,8 @@ html, body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* Text fields show focus with the caret, not a ring */
+input:focus-visible, textarea:focus-visible { outline: none; }
 
 /* ─────────────────────────────────────────
    Presentation stage

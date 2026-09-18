@@ -85,7 +85,7 @@ export default function TextSheet({
   const rows = useMemo(() => {
     const q = draft.trim().toLowerCase();
     if (!q) return SUGGESTIONS.slice(0, 5);
-    const words = q.split(/\s+/).filter((w) => w.length > 1);
+    const words = q.split(/\s+/).filter((w) => w.length > 2);
     const hits = SUGGESTIONS.filter((s) => words.some((w) => s.toLowerCase().includes(w)));
     return hits.slice(0, 4);
   }, [draft]);
