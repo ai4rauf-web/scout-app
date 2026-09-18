@@ -1,25 +1,34 @@
 import type { Metadata, Viewport } from "next";
-import { Open_Sans, Noto_Sans_Arabic } from "next/font/google";
+import { Inter, Noto_Sans_Arabic, Noto_Sans_SC } from "next/font/google";
 import "./globals.css";
 
-const openSans = Open_Sans({
-  variable: "--font-open-sans",
+// Inter carries Latin only. Arabic and Chinese fall through to Noto per glyph,
+// so each script gets a real face instead of a system fallback.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
 const notoArabic = Noto_Sans_Arabic({
   variable: "--font-arabic",
   subsets: ["arabic"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+const notoSC = Noto_Sans_SC({
+  variable: "--font-sc",
+  weight: ["400", "500"],
+  preload: false,
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Scout — conversational property search",
   description:
-    "A Property Finder Scout prototype. Talk to Scout in natural language, see what it understood, and steer mid-conversation.",
+    "A Property Finder Scout prototype. Talk to Scout, see what it understood, and steer mid-conversation.",
+  appleWebApp: { capable: true, title: "Scout", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -31,13 +40,14 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${openSans.variable} ${notoArabic.variable}`}
+      className={`${inter.variable} ${notoArabic.variable} ${notoSC.variable}`}
       suppressHydrationWarning
     >
       <head>
@@ -48,7 +58,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           }}
         />
       </head>
-      <body className="min-h-full antialiased">{children}</body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
