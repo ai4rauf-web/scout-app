@@ -60,7 +60,7 @@ export default function Answer({
         </div>
       </header>
 
-      <main className="no-scrollbar relative z-10 flex-1 overflow-y-auto pb-[112px]">
+      <main className="no-scrollbar relative z-10 flex-1 overflow-y-auto pb-[112px] [mask-image:linear-gradient(to_bottom,transparent,black_14px)]">
         {turns.map((t, i) => (
           <TurnBlock
             key={t.id}
