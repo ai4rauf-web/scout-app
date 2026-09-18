@@ -41,7 +41,7 @@ const PROMPTS = [
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
 export default function Landing({
-  go, ask, resume, openText, showContinue, onDismissContinue,
+  go, ask, resume, openText, showContinue, onDismissContinue, onOpenScreens,
 }: {
   go: Go;
   ask: (q: string) => void;
@@ -49,6 +49,7 @@ export default function Landing({
   openText: (draft: string) => void;
   showContinue: boolean;
   onDismissContinue: () => void;
+  onOpenScreens: () => void;
 }) {
   const [hour, setHour] = useState(19);
   useEffect(() => setHour(new Date().getHours()), []);
@@ -70,11 +71,21 @@ export default function Landing({
           </span>
         </button>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[17px] font-semibold tracking-[-0.01em] text-ink">Scout</span>
-          <span className="rounded-full bg-accent-tint px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.12em] text-accent">
+        {/* Scout presented as a Property Finder product */}
+        <div className="flex items-center gap-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/pf-logo.svg" alt="Property Finder" width={64} height={26} className="h-[26px] w-auto" draggable={false} />
+          <span className="h-5 w-px bg-border" aria-hidden />
+          <span className="text-[16px] font-semibold tracking-[-0.01em] text-ink">Scout</span>
+          {/* Prototype only: the Beta chip opens the screen switcher, since phones have no rail */}
+          <button
+            type="button"
+            onClick={onOpenScreens}
+            aria-label="Beta. Open prototype screens"
+            className="rounded-full bg-accent-tint px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.12em] text-accent transition-transform active:scale-95"
+          >
             Beta
-          </span>
+          </button>
         </div>
 
         {/* Theme lives in the rail on desktop; on a phone it sits here */}

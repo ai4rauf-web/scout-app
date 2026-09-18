@@ -7,6 +7,7 @@ import Landing from "../_screens/Landing";
 import TextSheet from "../_screens/TextSheet";
 import Answer, { type Turn, type Prov } from "../_screens/Answer";
 import History from "../_screens/History";
+import ScreenSheet from "./ScreenSheet";
 import Voice, { HEARD_DEFAULT, cleanHeard } from "../_screens/Voice";
 import { pickScript, refineScript, unsayScript, MULTI_THREAD, type Refine } from "../_lib/scripts";
 import { langOf } from "../_lib/i18n";
@@ -29,6 +30,7 @@ export default function Stage() {
   // "Reply in English instead" holds for the rest of the thread until undone
   const [replyLock, setReplyLock] = useState<null | "en">(null);
   const [showContinue, setShowContinue] = useState(true);
+  const [screensOpen, setScreensOpen] = useState(false);
   // The text sheet sits over whichever full screen opened it
   const [base, setBase] = useState<"landing" | "answer">("landing");
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -143,6 +145,17 @@ export default function Stage() {
 
   const inVoice = screen === "voice" || screen === "confirm";
   const overlay = screen === "text" || screen === "history" || inVoice;
+  // Deep links: ?s=multi opens that state on any device, and the address follows navigation
+  useEffect(() => {
+    const s = new URLSearchParams(window.location.search).get("s") as Screen | null;
+    if (s && SCREENS.some((x) => x.id === s) && s !== "landing") go(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    const url = screen === "landing" ? window.location.pathname : `${window.location.pathname}?s=${screen}`;
+    window.history.replaceState(null, "", url);
+  }, [screen]);
+
   const showing = overlay ? base : screen === "provenance" || screen === "multi" ? "answer" : screen;
 
   return (
@@ -220,7 +233,7 @@ export default function Stage() {
           <div className="frame" key={runKey}>
             <div className="ambient-glow" aria-hidden />
             {showing === "landing" && (
-              <Landing go={go} ask={ask} resume={resume} openText={(d) => { setDraft(d); go("text"); }} showContinue={showContinue} onDismissContinue={() => setShowContinue(false)} />
+              <Landing go={go} ask={ask} resume={resume} openText={(d) => { setDraft(d); go("text"); }} showContinue={showContinue} onDismissContinue={() => setShowContinue(false)} onOpenScreens={() => setScreensOpen(true)} />
             )}
             {showing === "answer" && (
               <Answer
@@ -269,6 +282,9 @@ export default function Stage() {
                 onSend={ask}
                 onVoice={() => go("voice")}
               />
+            )}
+            {screensOpen && (
+              <ScreenSheet current={screen} onPick={(s) => { setScreensOpen(false); go(s); }} onRestart={() => { setScreensOpen(false); restart(); }} onClose={() => setScreensOpen(false)} />
             )}
             <div
               className="home-indicator pointer-events-none absolute bottom-2 left-1/2 z-50 h-[5px] w-[134px] -translate-x-1/2 rounded-full bg-ink/80"
