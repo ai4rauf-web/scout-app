@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import type { Go } from "../_lib/types";
 import { isInferred, nounFor, type Inferred, type Listing, type Refine, type Script, type Seg } from "../_lib/scripts";
 import { STR, chipLabel, isRtl, langName, type Lang } from "../_lib/i18n";
+import { loadVoices, pickVoice, tune } from "../_lib/voice";
 import { StatusBar } from "../_components/Chrome";
 import ComposerBar from "../_components/ComposerBar";
 import ListingPhoto from "../_components/ListingPhoto";
@@ -159,18 +160,20 @@ function TurnBlock({
     .map((seg) => seg.t).join("").replace(/\s+([.。])/g, "$1").trim();
 
   const stopSpeaking = () => { window.speechSynthesis?.cancel(); setSpeaking(false); };
-  const listen = () => {
+  const listen = async () => {
     if (speaking) return stopSpeaking();
     const synth = window.speechSynthesis;
     if (!synth) return;
     synth.cancel();
+    setSpeaking(true);
+    // The voice follows the turn, so an Arabic answer is read in Arabic, by a clear male voice where the device has one
+    const { voice, male } = pickVoice(await loadVoices(), script.lang);
     const u = new SpeechSynthesisUtterance(spoken);
-    // The voice follows the turn, so an Arabic answer is read in Arabic
-    u.lang = L.speech;
-    u.rate = 1;
+    if (voice) u.voice = voice;
+    u.lang = voice?.lang.replace("_", "-") ?? L.speech;
+    tune(u, male);
     u.onend = () => setSpeaking(false);
     u.onerror = () => setSpeaking(false);
-    setSpeaking(true);
     synth.speak(u);
   };
   // Never keep talking over a new turn or after leaving the screen

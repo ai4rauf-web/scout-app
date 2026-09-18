@@ -40,6 +40,7 @@ type Strings = {
   seeAll: (total: number) => string;
   allNote: (n: number, total: number) => string;
   close: string;
+  /** The brand as each language writes it. Chinese has no settled form, so that button names the action instead. */
   whatsapp: string; digDeeper: string; market: string; disclaimer: string; scoutAsks: string;
   digTitle: (name: string) => string;
   digBody: (meta: string, price: string) => string;
@@ -97,11 +98,11 @@ export const STR: Record<Lang, Strings> = {
     seeAll: (total) => `查看全部 ${total} 套`,
     allNote: (n, total) => `正在显示 ${total} 套中的前 ${n} 套。可继续筛选，或直接问 Scout。`,
     close: "关闭",
-    whatsapp: "WhatsApp", digDeeper: "深入了解", market: "市场数据与分析",
+    whatsapp: "发消息", digDeeper: "深入了解", market: "市场数据与分析",
     disclaimer: "Scout 是 AI，可能会出错。", scoutAsks: "Scout 想问",
     digTitle: (name) => `详细介绍一下 ${name}`,
     digBody: (meta, price) => `——${meta}，${price}。你可以继续问我付款计划、户型或周边 `,
-    waToast: (name) => `正在打开 WhatsApp，联系 ${name} 的经纪人…`,
+    waToast: (name) => `正在给 ${name} 的经纪人发消息…`,
     thinkingDig: (name) => ["正在打开项目", `正在查看 ${name}`],
   },
   ar: {
@@ -153,11 +154,11 @@ export const STR: Record<Lang, Strings> = {
     seeAll: (total) => `全${total}件を見る`,
     allNote: (n, total) => `${total}件中、上位${n}件を表示しています。絞り込むか、Scout に聞いてください。`,
     close: "閉じる",
-    whatsapp: "WhatsApp", digDeeper: "詳しく見る", market: "市場データと分析",
+    whatsapp: "ワッツアップ", digDeeper: "詳しく見る", market: "市場データと分析",
     disclaimer: "Scout は AI のため、間違えることがあります。", scoutAsks: "Scout からの質問",
     digTitle: (name) => `${name}について詳しく教えて`,
     digBody: (meta, price) => `——${meta}、${price}。支払いプラン、間取り、周辺エリアについて続けて聞いてください `,
-    waToast: (name) => `WhatsApp を開いて${name}の担当者に連絡します…`,
+    waToast: (name) => `ワッツアップを開いて${name}の担当者に連絡します…`,
     thinkingDig: (name) => ["物件を開いています", `${name}を確認しています`],
   },
   ru: {
@@ -181,11 +182,11 @@ export const STR: Record<Lang, Strings> = {
     seeAll: (total) => `Показать все ${total}`,
     allNote: (n, total) => `Показаны первые ${n} из ${total}. Уточните запрос или спросите Scout, чтобы сузить список.`,
     close: "Закрыть",
-    whatsapp: "WhatsApp", digDeeper: "Подробнее", market: "Данные рынка и анализ",
+    whatsapp: "Ватсап", digDeeper: "Подробнее", market: "Данные рынка и анализ",
     disclaimer: "Scout — это ИИ, и он может ошибаться.", scoutAsks: "Scout спрашивает",
     digTitle: (name) => `Расскажи подробнее про ${name}`,
     digBody: (meta, price) => ` — ${meta}. ${price}. Спросите меня о рассрочке, планировках или районе `,
-    waToast: (name) => `Открываю WhatsApp для связи с агентом по ${name}…`,
+    waToast: (name) => `Открываю Ватсап для связи с агентом по ${name}…`,
     thinkingDig: (name) => ["Открываю объект", `Изучаю ${name}`],
   },
   hi: {
@@ -209,11 +210,11 @@ export const STR: Record<Lang, Strings> = {
     seeAll: (total) => `सभी ${total} देखें`,
     allNote: (n, total) => `${total} में से शीर्ष ${n} दिख रहे हैं। सूची छोटी करने के लिए और छाँटें या Scout से पूछें।`,
     close: "बंद करें",
-    whatsapp: "WhatsApp", digDeeper: "और जानें", market: "बाज़ार के आँकड़े और विश्लेषण",
+    whatsapp: "व्हाट्सऐप", digDeeper: "और जानें", market: "बाज़ार के आँकड़े और विश्लेषण",
     disclaimer: "Scout एक AI है और गलती कर सकता है।", scoutAsks: "Scout पूछ रहा है",
     digTitle: (name) => `${name} के बारे में और बताइए`,
     digBody: (meta, price) => ` — ${meta}। ${price}। पेमेंट प्लान, यूनिट के प्रकार या इलाके के बारे में पूछिए `,
-    waToast: (name) => `${name} के एजेंट से बात करने के लिए WhatsApp खोल रहा हूँ…`,
+    waToast: (name) => `${name} के एजेंट से बात करने के लिए व्हाट्सऐप खोल रहा हूँ…`,
     thinkingDig: (name) => ["प्रोजेक्ट खोल रहा हूँ", `${name} देख रहा हूँ`],
   },
 };

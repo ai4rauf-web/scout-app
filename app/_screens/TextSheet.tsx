@@ -172,9 +172,6 @@ export default function TextSheet({
               <span key={lang} className="rise inline-block">{lang}</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="6 9 12 15 18 9" /></svg>
             </span>
-            <button type="button" aria-label="Attach a photo or a listing" className="grid h-9 w-9 place-items-center rounded-full border border-border text-muted transition-colors hover:text-accent">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-            </button>
           </div>
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => close(onVoice)} aria-label="Switch to voice" className="grid h-11 w-11 place-items-center rounded-full text-accent transition-colors hover:bg-accent-tint active:scale-95">
