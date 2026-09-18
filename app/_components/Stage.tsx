@@ -9,7 +9,7 @@ import Answer, { type Turn, type Prov } from "../_screens/Answer";
 import History from "../_screens/History";
 import ScreenSheet from "./ScreenSheet";
 import Voice, { HEARD_DEFAULT, cleanHeard } from "../_screens/Voice";
-import { pickScript, refineScript, unsayScript, MULTI_THREAD, type Refine } from "../_lib/scripts";
+import { pickScript, refineScript, unsayScript, digScript, MULTI_THREAD, type Refine } from "../_lib/scripts";
 import { langOf } from "../_lib/i18n";
 
 const DEFAULT_Q = "New Emaar launches in Dubai South under 2M";
@@ -112,6 +112,11 @@ export default function Stage() {
 
   const refine = (turn: Turn, r: Refine) =>
     setTurns((t) => [...t, { id: turnSeq++, q: r.label, qLang: turn.qLang, derived: true, script: refineScript(turn.script, r), done: false }]);
+
+  const dig = (turn: Turn, listing: number) => {
+    const next = digScript(turn.script, listing);
+    if (next) setTurns((t) => [...t, { id: turnSeq++, q: next.q, qLang: turn.qLang, derived: true, script: next.script, done: false }]);
+  };
 
   const unsay = (turn: Turn, seg: number) => {
     const next = unsayScript(turn.script, seg);
@@ -241,6 +246,7 @@ export default function Stage() {
                 go={go}
                 onTurnDone={markDone}
                 onRefine={refine}
+                onDig={dig}
                 onFollowUp={() => go("text")}
                 onVoice={() => go("voice")}
                 onNewChat={newChat}

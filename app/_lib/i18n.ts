@@ -30,6 +30,11 @@ type Strings = {
   thinkingRefine: (n: number, noun: string) => string[];
   thinkingUnsay: (n: number, noun: string) => string[];
   switched: string;
+  whatsapp: string; digDeeper: string; market: string; disclaimer: string; scoutAsks: string;
+  digTitle: (name: string) => string;
+  digBody: (meta: string, price: string) => string;
+  waToast: (name: string) => string;
+  thinkingDig: (name: string) => string[];
 };
 
 export const STR: Record<Lang, Strings> = {
@@ -49,6 +54,12 @@ export const STR: Record<Lang, Strings> = {
     thinkingRefine: (n, noun) => ["Applying your change", `Re-ranking ${n} ${noun}`],
     thinkingUnsay: (n, noun) => ["Removing that assumption", `Re-ranking ${n} ${noun}`],
     switched: "Switched to English",
+    whatsapp: "WhatsApp", digDeeper: "Dig deeper", market: "Market data & analysis",
+    disclaimer: "Scout is AI and can make mistakes.", scoutAsks: "Scout asks",
+    digTitle: (name) => `Tell me more about ${name}`,
+    digBody: (meta, price) => ` — ${meta}. ${price}. Ask me about payment plans, unit mix or the area `,
+    waToast: (name) => `Opening WhatsApp with the agent for ${name}…`,
+    thinkingDig: (name) => ["Opening the project", `Reading ${name}`],
   },
   zh: {
     listings: "房源", map: "地图", sources: "来源",
@@ -66,6 +77,12 @@ export const STR: Record<Lang, Strings> = {
     thinkingRefine: (n, noun) => ["正在应用你的修改", `正在重新排序 ${n} 套${noun}`],
     thinkingUnsay: (n, noun) => ["正在去掉这个推测", `正在重新排序 ${n} 套${noun}`],
     switched: "已切换到中文",
+    whatsapp: "WhatsApp", digDeeper: "深入了解", market: "市场数据与分析",
+    disclaimer: "Scout 是 AI，可能会出错。", scoutAsks: "Scout 想问",
+    digTitle: (name) => `详细介绍一下 ${name}`,
+    digBody: (meta, price) => `——${meta}，${price}。你可以继续问我付款计划、户型或周边 `,
+    waToast: (name) => `正在打开 WhatsApp，联系 ${name} 的经纪人…`,
+    thinkingDig: (name) => ["正在打开项目", `正在查看 ${name}`],
   },
   ar: {
     listings: "العقارات", map: "الخريطة", sources: "المصادر",
@@ -83,5 +100,11 @@ export const STR: Record<Lang, Strings> = {
     thinkingRefine: (n, noun) => ["أطبّق تعديلك", `أعيد ترتيب ${n} ${noun}`],
     thinkingUnsay: (n, noun) => ["أزيل هذا الافتراض", `أعيد ترتيب ${n} ${noun}`],
     switched: "تم التبديل إلى العربية",
+    whatsapp: "واتساب", digDeeper: "تفاصيل أكثر", market: "بيانات السوق والتحليل",
+    disclaimer: "سكاوت ذكاء اصطناعي وقد يخطئ.", scoutAsks: "سكاوت يسأل",
+    digTitle: (name) => `أخبرني المزيد عن ${name}`,
+    digBody: (meta, price) => ` — ${meta}. ${price}. اسألني عن خطط الدفع أو أنواع الوحدات أو المنطقة `,
+    waToast: (name) => `جارٍ فتح واتساب للتواصل مع وكيل ${name}…`,
+    thinkingDig: (name) => ["أفتح المشروع", `أقرأ ${name}`],
   },
 };

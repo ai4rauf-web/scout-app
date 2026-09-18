@@ -24,7 +24,16 @@ export type Listing = {
   meta: string;
   price: string;
   img: string;
+  /** Shown as a pill on the photo: "Under construction", "Ready" */
+  status?: string;
+  /** Developer and payment terms, the two facts the live cards lead with */
+  terms?: string;
+  /** A fuller paragraph for Dig deeper, when we have one */
+  detail?: string;
 };
+export type Stat = { label: string; value: string; tone?: "positive" | "negative" };
+/** A question Scout asks back. Each option either digs into a listing or runs a refinement. */
+export type AskBack = { q: string; options: { label: string; sub: string; dig?: number; refine?: Refine }[] };
 export type Refine = { label: string; delta: number };
 
 export type Script = {
@@ -41,6 +50,9 @@ export type Script = {
   listings: Listing[];
   refine: Refine[];
   thinking: string[];
+  /** Behind "Market data & analysis" */
+  market?: { note: string; stats: Stat[] };
+  ask?: AskBack;
 };
 
 /** The right noun form for a count. Only Arabic changes form here. */
@@ -83,15 +95,43 @@ const LAUNCH: Script = {
     { t: "." },
   ],
   listings: [
-    { name: "Golf Trails · Emaar South", meta: "1–3 BR · 10% down · Q4 2030", price: "From AED 1.06M", img: "/listings/golf-views.jpg" },
-    { name: "Golf Vale · Emaar South", meta: "1–3 BR · 672–2,796 sqft · Q2 2030", price: "From AED 1.10M", img: "/listings/greenway.jpg" },
-    { name: "Vista Ridge · Emaar South", meta: "1–3 BR · 788–1,752 sqft · Q3 2029", price: "From AED 1.30M", img: "/listings/golf-lane.jpg" },
+    {
+      name: "Golf Trails · Emaar South", meta: "1–3 BR · Q4 2030", price: "From AED 1.06M", img: "/listings/golf-views.jpg",
+      status: "Under construction", terms: "Emaar Properties · 10% down",
+      detail: " is under construction by Emaar Properties in Emaar South, completing Q4 2030. It has 1 to 3 bedroom homes with 10% down, and the launch price starts at AED 1,060,000",
+    },
+    {
+      name: "Golf Vale · Emaar South", meta: "1–3 BR · 672–2,796 sqft · Q2 2030", price: "From AED 1.10M", img: "/listings/greenway.jpg",
+      status: "Under construction", terms: "Emaar Properties · 10% down",
+      detail: " is under construction by Emaar Properties in Emaar South, completing Q2 2030. Homes run from 672 to 2,796 sqft across 1 to 3 bedrooms with 10% down, and the launch price starts at AED 1,099,888",
+    },
+    {
+      name: "Vista Ridge · Emaar South", meta: "1–3 BR · 788–1,752 sqft · Q3 2029", price: "From AED 1.30M", img: "/listings/golf-lane.jpg",
+      status: "Under construction", terms: "Emaar Properties · 10% down",
+      detail: " is under construction by Emaar Properties in Emaar South, completing Q3 2029, the earliest of the five. Homes run from 788 to 1,752 sqft across 1 to 3 bedrooms with 10% down, and the launch price starts at AED 1,297,888",
+    },
   ],
   refine: [
     { label: "Include ready projects too", delta: 2 },
     { label: "Handover by 2029 only", delta: -2 },
-    { label: "Compare payment plans", delta: 0 },
   ],
+  market: {
+    note: "Dubai South · Property Finder data",
+    stats: [
+      { label: "Price per sqft, year on year", value: "+8.5%", tone: "positive" },
+      { label: "Transactions, year on year", value: "+130.8%", tone: "positive" },
+      { label: "Down payment on these projects", value: "10%" },
+    ],
+  },
+  ask: {
+    q: "Which of these interests you most, or shall I dig into a specific one?",
+    options: [
+      { label: "Golf Trails", sub: "From AED 1.06M · 1–3 BR · Q4 2030", dig: 0 },
+      { label: "Golf Vale", sub: "From AED 1.10M · 1–3 BR · Q2 2030", dig: 1 },
+      { label: "Vista Ridge", sub: "From AED 1.30M · 1–3 BR · Q3 2029", dig: 2 },
+      { label: "Show all details & compare", sub: "Payment plans, handover dates, unit mix", refine: { label: "Compare payment plans", delta: 0 } },
+    ],
+  },
 };
 
 const READY: Script = {
@@ -263,6 +303,53 @@ export const MULTI_THREAD = [
   "وماذا عن شقق بثلاث غرف؟",
 ];
 
+
+/** The six quick searches the live Scout offers. Each gets an honest answer of its own, with one assumption to check. */
+const quickScript = (id: string, count: number, segs: Seg[], listings: Listing[], refine: Refine[]): Script => ({
+  id, lang: "en", count, noun: "projects",
+  thinking: ["Reading your question", "Searching Property Finder", `Ranking ${count} projects`],
+  segs: [...segs, { t: " Three to start with " }, cite(1), cite(2), cite(3), { t: "." }],
+  listings, refine,
+});
+const HOMES_2027: Listing[] = READY.listings.map((l) => ({ ...l, meta: l.meta.replace("Ready", "Handover 2027") }));
+
+const QUICK: Record<string, Script> = {
+  "new launches this month": quickScript("q-month", 17, [
+    { t: "I found 17 projects launched " }, { t: "this month", kind: "stated" }, { t: ". I kept to " },
+    { t: "Dubai", kind: "inferred", from: "no area given", why: "You didn’t name a place, so Scout stayed in Dubai, where most of this month’s launches are.", without: 22 },
+    { t: ". Launches are down on last month." },
+  ], LAUNCH.listings, [{ label: "Under 2M only", delta: -8 }, { label: "Compare payment plans", delta: 0 }]),
+  "under 20% down payment": quickScript("q-down", 64, [
+    { t: "I found 64 projects with a down payment " }, { t: "under 20%", kind: "stated" }, { t: ". I read that as " },
+    { t: "off-plan only", kind: "inferred", from: "down payment", why: "Down-payment plans mostly belong to off-plan, so Scout left out ready homes. You didn’t rule them out.", without: 91 },
+    { t: ". The market average is 13% right now." },
+  ], LAUNCH.listings, [{ label: "10% down or less", delta: -31 }, { label: "Compare payment plans", delta: 0 }]),
+  "post-handover plans": quickScript("q-post", 38, [
+    { t: "I found 38 projects with " }, { t: "post-handover plans", kind: "stated" }, { t: ". I ranked them by " },
+    { t: "the longest plan first", kind: "inferred", from: "post-handover plans", why: "You didn’t say what matters most, so Scout ranked by how long you can keep paying after handover.", without: 38 },
+    { t: "." },
+  ], LAUNCH.listings, [{ label: "Under 2M only", delta: -17 }, { label: "Compare payment plans", delta: 0 }]),
+  "highest appreciation potential": quickScript("q-appr", 12, [
+    { t: "I ranked 12 projects for " }, { t: "appreciation potential", kind: "stated" }, { t: ". I measured it over " },
+    { t: "the last 12 months", kind: "inferred", from: "appreciation potential", why: "“Potential” has no time frame, so Scout used price growth per sqft over the last year.", without: 12 },
+    { t: ". Dubai South leads, up 8.5% per sqft." },
+  ], LAUNCH.listings, [{ label: "Under 2M only", delta: -5 }, { label: "Compare payment plans", delta: 0 }]),
+  "emaar & damac launches": quickScript("q-devs", 27, [
+    { t: "I found 27 projects by " }, { t: "Emaar", kind: "stated" }, { t: " and " }, { t: "DAMAC", kind: "stated" }, { t: ". I kept the ones " },
+    { t: "launched this year", kind: "inferred", from: "launches", why: "Scout read “launches” as recent, so older projects still selling were left out.", without: 58 },
+    { t: "." },
+  ], LAUNCH.listings, [{ label: "Under 2M only", delta: -11 }, { label: "Compare payment plans", delta: 0 }]),
+  "ready in 2027 under 2m": quickScript("q-2027", 41, [
+    { t: "I found 41 homes handing over in " }, { t: "2027", kind: "stated" }, { t: " and priced " }, { t: "under 2M", kind: "stated" }, { t: ". I started with " },
+    { t: "apartments", kind: "inferred", from: "under 2M", why: "Most homes under 2M are apartments, so Scout started there. You didn’t say which type.", without: 49 },
+    { t: "." },
+  ], HOMES_2027, [{ label: "Add sea view", delta: -22 }, { label: "Compare payment plans", delta: 0 }]),
+};
+export const QUICK_SEARCHES = [
+  "New launches this month", "Under 20% down payment", "Post-handover plans",
+  "Highest appreciation potential", "Emaar & DAMAC launches", "Ready in 2027 under 2M",
+];
+
 export const SCRIPTS: Record<string, Script> = { launch: LAUNCH, ready: READY, villa: VILLA };
 
 export function pickScript(q: string): Script {
@@ -270,6 +357,8 @@ export function pickScript(q: string): Script {
   if (lang === "zh") return SEA_ZH;
   if (lang === "ar") return THREE_AR;
   const s = q.toLowerCase();
+  const quick = QUICK[s.trim()];
+  if (quick) return quick;
   if (/villa|family|communit|school|فيلا/.test(s)) return VILLA;
   if (/ready|apartment|marina|jbr|furnish|شقة|公寓/.test(s)) {
     // If the user named the area, it is stated — never present it as an assumption.
@@ -300,7 +389,7 @@ export function refineScript(base: Script, r: Refine): Script {
     : L.refined(r.label, base.count, next, nounFor(base, next));
   return {
     ...base,
-    alt: undefined,
+    alt: undefined, ask: undefined, market: undefined,
     count: next,
     thinking: L.thinkingRefine(next, nounFor(base, next)),
     segs: [
@@ -328,7 +417,7 @@ export function unsayScript(base: Script, segIndex: number): { q: string; script
     q: L.dropTitle(seg.t),
     script: {
       ...base,
-      alt: undefined,
+      alt: undefined, ask: undefined, market: undefined,
       count: seg.without,
       thinking: L.thinkingUnsay(seg.without, nounFor(base, seg.without)),
       segs: [
@@ -339,6 +428,34 @@ export function unsayScript(base: Script, segIndex: number): { q: string; script
         { t: base.lang === "zh" ? "。" : "." },
       ],
       listings: [base.listings[2], base.listings[0], base.listings[1]],
+    },
+  };
+}
+
+
+/** Dig deeper opens one project as its own turn, in the language of the turn it came from. */
+export function digScript(base: Script, index: number): { q: string; script: Script } | null {
+  const l = base.listings[index];
+  if (!l) return null;
+  const L = STR[base.lang];
+  const name = (l.local ?? l.name).split(" · ")[0];
+  const rest = base.listings.filter((_, i) => i !== index);
+  const segs: Seg[] = l.detail && base.lang === "en"
+    ? [
+        { t: name, kind: "stated" }, { t: `${l.detail}. I compared it with ` },
+        {
+          t: "the others in this search", kind: "inferred", from: "your last question",
+          why: "Scout assumed you are still choosing between the projects from this search, so it weighs this one against them and not the whole market.",
+          without: 11,
+        },
+        { t: ". Ask me about payment plans, unit mix or the area " }, cite(1), { t: "." },
+      ]
+    : [{ t: name, kind: "stated" }, { t: L.digBody(l.meta, l.price) }, cite(1), { t: base.lang === "zh" ? "。" : "." }];
+  return {
+    q: L.digTitle(name),
+    script: {
+      ...base, id: `${base.id}-dig-${index}`, alt: undefined, ask: undefined, market: undefined,
+      count: 1, thinking: L.thinkingDig(name), segs, listings: [l, ...rest], refine: [],
     },
   };
 }

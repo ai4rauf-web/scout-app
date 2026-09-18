@@ -26,13 +26,14 @@ const totalChars = (segs: Seg[]) => segs.reduce((n, s) => n + s.t.length, 0);
 const DIM = "transition-opacity duration-200";
 
 export default function Answer({
-  turns, prov, go, onTurnDone, onRefine, onFollowUp, onVoice, onNewChat, onProvenance, onCloseProv, onUnsay, onToggleLang,
+  turns, prov, go, onTurnDone, onRefine, onDig, onFollowUp, onVoice, onNewChat, onProvenance, onCloseProv, onUnsay, onToggleLang,
 }: {
   turns: Turn[];
   prov: Prov | null;
   go: Go;
   onTurnDone: (id: number) => void;
   onRefine: (turn: Turn, r: Refine) => void;
+  onDig: (turn: Turn, listing: number) => void;
   onFollowUp: () => void;
   onVoice: () => void;
   onNewChat: () => void;
@@ -42,6 +43,13 @@ export default function Answer({
   onToggleLang: (turn: Turn) => void;
 }) {
   const [saved, setSaved] = useState(false);
+  // WhatsApp leaves the app, so the prototype only says what would happen
+  const [toast, setToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 2600);
+    return () => window.clearTimeout(t);
+  }, [toast]);
   // Navigation stays in the app's own direction so Back never changes sides mid-thread.
   // Only the places you read and write follow the language: each turn, and the composer.
   const current: Lang = turns.length ? turns[turns.length - 1].script.lang : "en";
@@ -76,7 +84,7 @@ export default function Answer({
         </div>
       </header>
 
-      <main className="no-scrollbar relative z-10 flex-1 overflow-y-auto pb-[112px] [mask-image:linear-gradient(to_bottom,transparent,black_14px)]">
+      <main className="no-scrollbar relative z-10 flex-1 overflow-y-auto pb-[136px] [mask-image:linear-gradient(to_bottom,transparent,black_14px)]">
         {turns.map((t, i) => (
           <TurnBlock
             key={t.id}
@@ -90,6 +98,8 @@ export default function Answer({
             activeSeg={prov?.turnId === t.id ? prov.seg : null}
             onDone={() => onTurnDone(t.id)}
             onRefine={(r) => onRefine(t, r)}
+            onDig={(i) => onDig(t, i)}
+            onWhatsApp={(name) => setToast(STR[t.script.lang].waToast(name))}
             onProvenance={(seg) => onProvenance({ turnId: t.id, seg })}
             onCloseProv={onCloseProv}
             onUnsay={(seg) => onUnsay(t, seg)}
@@ -97,10 +107,15 @@ export default function Answer({
         ))}
       </main>
 
-      <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-3 min-[900px]:pb-7">
+      <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-[max(10px,env(safe-area-inset-bottom))] pt-3 min-[900px]:pb-4">
         <div className="pointer-events-none absolute inset-x-0 -top-6 bottom-0 bg-gradient-to-t from-bg via-bg/95 to-transparent" aria-hidden />
+        <div role="status" className="pointer-events-none absolute inset-x-4 -top-9 flex justify-center">
+          {toast && <span className="rise rounded-full bg-ink px-3.5 py-2 text-[12px] font-medium text-bg shadow-[var(--shadow-3)]">{toast}</span>}
+        </div>
         <div dir={isRtl(current) ? "rtl" : "ltr"} lang={current} className={`relative ${DIM} ${dim ? "opacity-25" : ""}`}>
           <ComposerBar label={STR[current].followUp} chip={chipLabel[current]} onField={onFollowUp} onVoice={onVoice} />
+          {/* Where the live Scout keeps it: under the composer, only once there is an answer to doubt */}
+          <p className="mt-2 text-center text-[11px] leading-none text-muted">{STR[current].disclaimer}</p>
         </div>
       </div>
     </div>
@@ -108,11 +123,11 @@ export default function Answer({
 }
 
 function TurnBlock({
-  turn, first, latest, prevQLang, home, onToggleLang, dim, activeSeg, onDone, onRefine, onProvenance, onCloseProv, onUnsay,
+  turn, first, latest, prevQLang, home, onToggleLang, dim, activeSeg, onDone, onRefine, onDig, onWhatsApp, onProvenance, onCloseProv, onUnsay,
 }: {
   turn: Turn; first: boolean; latest: boolean; dim: boolean; activeSeg: number | null;
   prevQLang: Lang | null; home: Lang; onToggleLang: () => void;
-  onDone: () => void; onRefine: (r: Refine) => void; onProvenance: (seg: number) => void;
+  onDone: () => void; onRefine: (r: Refine) => void; onDig: (listing: number) => void; onWhatsApp: (name: string) => void; onProvenance: (seg: number) => void;
   onCloseProv: () => void; onUnsay: (seg: number) => void;
 }) {
   const { script } = turn;
@@ -123,6 +138,7 @@ function TurnBlock({
   const [shown, setShown] = useState(turn.done ? total : 0);
   const [step, setStep] = useState(0);
   const [tab, setTab] = useState<"listings" | "map" | "sources">("listings");
+  const [marketOpen, setMarketOpen] = useState(false);
   const ref = useRef<HTMLElement | null>(null);
   const off = dim ? "opacity-25" : "";
 
@@ -202,24 +218,61 @@ function TurnBlock({
             </p>
           )}
 
-          <div className={`rise -mx-5 mt-5 ${DIM} ${off}`} style={d(100)}>
-            {/* Focusable so a keyboard can scroll it: the cards themselves hold no controls */}
-            <div tabIndex={0} role="group" aria-label={L.listings} className="no-scrollbar flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto rounded-[16px] px-5 pb-1 outline-offset-2">
-              {script.listings.map((l, i) => (
-                <div key={l.name} className="w-[228px] shrink-0 snap-start overflow-hidden rounded-[16px] border border-border bg-bg-elev shadow-[var(--shadow-1)]">
-                  <div className="relative h-[112px]">
-                    <ListingPhoto src={l.img} alt={l.name} />
-                    <span className="absolute start-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] font-bold tabular-nums text-bg">{i + 1}</span>
-                  </div>
-                  <div className="px-3 pb-3 pt-2.5">
-                    <p className="truncate text-[13px] font-semibold text-ink">{l.local ?? l.name}</p>
-                    {/* The Latin name is what is on the building and the contract, so it stays */}
-                    {l.local && <p className="truncate text-start text-[11px] text-muted"><bdi lang="en">{l.name}</bdi></p>}
-                    <p className="mt-0.5 truncate text-[12px] text-muted">{l.meta}</p>
-                    <p className="mt-1 text-[14px] font-semibold tabular-nums text-ink">{l.price}</p>
-                  </div>
+          {script.market && (
+            <div className={`rise mt-4 ${DIM} ${off}`} style={d(70)}>
+              <button type="button" aria-expanded={marketOpen} onClick={() => setMarketOpen((v) => !v)} className="flex h-9 items-center gap-1.5 text-[13px] font-semibold text-accent">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="4 16 9 11 13 14 20 7" /><polyline points="15 7 20 7 20 12" /></svg>
+                {L.market}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${marketOpen ? "rotate-180" : ""}`} aria-hidden><polyline points="6 9 12 15 18 9" /></svg>
+              </button>
+              <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${marketOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+                <div className="overflow-hidden" inert={!marketOpen}>
+                  <dl className="scout-wash mt-1 rounded-[14px] px-4 py-1">
+                    {script.market.stats.map((m) => (
+                      <div key={m.label} className="flex items-baseline justify-between gap-3 border-b border-border/70 py-2.5 last:border-b-0">
+                        <dt className="text-[13px] text-ink-2">{m.label}</dt>
+                        <dd className={`text-[14px] font-semibold tabular-nums ${m.tone === "positive" ? "text-positive-text" : m.tone === "negative" ? "text-negative-text" : "text-ink"}`}><bdi dir="ltr">{m.value}</bdi></dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="mt-1.5 text-[11px] text-muted">{script.market.note}</p>
                 </div>
-              ))}
+              </div>
+            </div>
+          )}
+
+          <div className={`rise -mx-5 mt-5 ${DIM} ${off}`} style={d(100)}>
+            <div role="group" aria-label={L.listings} className="no-scrollbar flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-1">
+              {script.listings.map((l, i) => {
+                const short = (l.local ?? l.name).split(" · ")[0];
+                return (
+                  <div key={l.name} className="flex w-[244px] shrink-0 snap-start flex-col overflow-hidden rounded-[16px] border border-border bg-bg-elev shadow-[var(--shadow-1)]">
+                    <div className="relative h-[112px]">
+                      <ListingPhoto src={l.img} alt={l.name} />
+                      <span className="absolute start-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] font-bold tabular-nums text-bg">{i + 1}</span>
+                      {l.status && <span className="absolute end-2 top-2 rounded-full bg-black/60 px-2 py-[3px] text-[10px] font-semibold text-white backdrop-blur-sm">{l.status}</span>}
+                    </div>
+                    <div className="flex flex-1 flex-col px-3 pb-3 pt-2.5">
+                      <p className="truncate text-[13px] font-semibold text-ink">{l.local ?? l.name}</p>
+                      {/* The Latin name is what is on the building and the contract, so it stays */}
+                      {l.local && <p className="truncate text-start text-[11px] text-muted"><bdi lang="en">{l.name}</bdi></p>}
+                      <p className="mt-0.5 truncate text-[12px] text-muted">{l.meta}</p>
+                      {l.terms && <p className="truncate text-[12px] text-muted">{l.terms}</p>}
+                      <p className="mt-1 text-[14px] font-semibold tabular-nums text-ink">{l.price}</p>
+                      {/* Same two actions as the live cards: talk to a person, or keep talking to Scout */}
+                      <div className="mt-auto flex gap-2 pt-3">
+                        <button type="button" onClick={() => onWhatsApp(short)} aria-label={`${L.whatsapp} · ${short}`} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-border text-[12px] font-semibold text-ink-2 transition-colors hover:border-accent/40 active:scale-[0.98]">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4.1A8 8 0 1 1 20 11.5z" /></svg>
+                          {L.whatsapp}
+                        </button>
+                        <button type="button" onClick={() => onDig(i)} aria-label={`${L.digDeeper} · ${short}`} className="h-9 flex-1 rounded-full bg-accent-tint text-[12px] font-semibold text-accent transition-transform active:scale-[0.98]">
+                          {L.digDeeper}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -229,6 +282,28 @@ function TurnBlock({
               <Action label={L.listen}><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="3" y="14" width="4" height="6" rx="1.5" /><rect x="17" y="14" width="4" height="6" rx="1.5" /></Action>
               <Action label={L.copy}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></Action>
             </div>
+          )}
+
+          {latest && script.ask && (
+            <section className={`rise relative mt-7 overflow-hidden rounded-[16px] border border-border bg-bg-elev ps-5 pe-4 pt-3.5 shadow-[var(--shadow-1)] ${DIM} ${off}`} style={d(200)}>
+              {/* Scout is the one speaking here, so the gradient appears */}
+              <span className="scout-bar absolute inset-y-0 start-0 w-1" aria-hidden />
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">{L.scoutAsks}</p>
+              <h2 className="mt-1 text-[15px] font-semibold leading-[1.35] text-ink">{script.ask.q}</h2>
+              <ul className="mt-1.5">
+                {script.ask.options.map((o) => (
+                  <li key={o.label} className="border-b border-border last:border-b-0">
+                    <button type="button" onClick={() => (o.refine ? onRefine(o.refine) : onDig(o.dig ?? 0))} className="group flex w-full items-center gap-3 py-3 text-start">
+                      <span className="min-w-0 flex-1">
+                        <span className={`block text-[14px] font-medium ${o.refine ? "text-accent" : "text-ink"}`}>{o.label}</span>
+                        <span className="block truncate text-[12px] text-muted">{o.sub}</span>
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted transition-colors group-hover:text-accent rtl:rotate-180" aria-hidden><polyline points="9 6 15 12 9 18" /></svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
 
           {latest && script.refine.length > 0 && (

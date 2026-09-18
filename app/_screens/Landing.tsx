@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
+import { QUICK_SEARCHES } from "../_lib/scripts";
 import type { Go } from "../_lib/types";
 import { StatusBar, FillArrow } from "../_components/Chrome";
 import ComposerBar from "../_components/ComposerBar";
@@ -33,11 +34,6 @@ const INSIGHTS: { title: string; line: string; value: string; tone: Tone; glyph:
   { title: "Primary market share", line: "+0.5% vs last month", value: "62%", tone: "positive", glyph: "yield", q: "How much of the market is primary sales?" },
 ];
 
-const PROMPTS = [
-  "Apartments under 2M, ready this year",
-  "Best communities for a family villa",
-  "Off-plan launches under 20% down",
-];
 
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
@@ -81,9 +77,9 @@ export default function Landing({
           className="grid h-11 place-items-center rounded-[10px] px-1 transition-transform active:scale-[0.98]"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/pfs-logo-light.svg" alt="" width={138} height={36} className="logo-light h-9 w-auto" draggable={false} />
+          <img src="/pfs-logo-light.svg" alt="" width={141} height={36} className="logo-light h-9 w-auto" draggable={false} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/pfs-logo-dark.svg" alt="" width={138} height={36} className="logo-dark h-9 w-auto" draggable={false} />
+          <img src="/pfs-logo-dark.svg" alt="" width={141} height={36} className="logo-dark h-9 w-auto" draggable={false} />
         </button>
 
         {/* Theme lives in the rail on desktop; on a phone it sits here */}
@@ -198,11 +194,11 @@ export default function Landing({
           </div>
         </section>
 
-        {/* Suggested prompts */}
+        {/* The same six quick searches the live Scout offers; the arrow lets you edit one before asking */}
         <section className="rise px-5 pt-7" style={d(240)}>
-          <Label>Try asking</Label>
+          <Label>Quick search</Label>
           <ul className="mt-1">
-            {PROMPTS.map((p) => (
+            {QUICK_SEARCHES.map((p) => (
               <li key={p} className="flex items-center border-b border-border last:border-b-0">
                 <button type="button" onClick={() => ask(p)} className="min-w-0 flex-1 py-3.5 text-left text-[14px] text-ink-2 transition-colors hover:text-ink">
                   {p}
