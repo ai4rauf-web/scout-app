@@ -170,7 +170,7 @@ function TurnBlock({
       </h1>
 
       <div className={`mt-4 flex gap-2 ${DIM} ${off}`}>
-        <Chip active={tab === "listings"} onClick={() => setTab("listings")}>{L.listings} <span className="tabular-nums opacity-70">· {script.count}</span></Chip>
+        <Chip active={tab === "listings"} onClick={() => setTab("listings")}>{L.listings} <span className="tabular-nums">· {script.count}</span></Chip>
         <Chip active={tab === "map"} onClick={() => setTab("map")}>{L.map}</Chip>
         <Chip active={tab === "sources"} onClick={() => setTab("sources")}>{L.sources}</Chip>
       </div>
@@ -203,7 +203,8 @@ function TurnBlock({
           )}
 
           <div className={`rise -mx-5 mt-5 ${DIM} ${off}`} style={d(100)}>
-            <div className="no-scrollbar flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-1">
+            {/* Focusable so a keyboard can scroll it: the cards themselves hold no controls */}
+            <div tabIndex={0} role="group" aria-label={L.listings} className="no-scrollbar flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto rounded-[16px] px-5 pb-1 outline-offset-2">
               {script.listings.map((l, i) => (
                 <div key={l.name} className="w-[228px] shrink-0 snap-start overflow-hidden rounded-[16px] border border-border bg-bg-elev shadow-[var(--shadow-1)]">
                   <div className="relative h-[112px]">
@@ -213,7 +214,7 @@ function TurnBlock({
                   <div className="px-3 pb-3 pt-2.5">
                     <p className="truncate text-[13px] font-semibold text-ink">{l.local ?? l.name}</p>
                     {/* The Latin name is what is on the building and the contract, so it stays */}
-                    {l.local && <p className="truncate text-start text-[11px] text-muted-2"><bdi lang="en">{l.name}</bdi></p>}
+                    {l.local && <p className="truncate text-start text-[11px] text-muted"><bdi lang="en">{l.name}</bdi></p>}
                     <p className="mt-0.5 truncate text-[12px] text-muted">{l.meta}</p>
                     <p className="mt-1 text-[14px] font-semibold tabular-nums text-ink">{l.price}</p>
                   </div>
@@ -275,7 +276,7 @@ function Prose({
         }
         if (s.kind === "stated") return <span key={i} className={`prov-stated ${DIM} ${off}`}>{text}</span>;
         // An assumption the user dropped stays visible, struck out — the old answer no longer claims it
-        if (unsaid.includes(i)) return <span key={i} className={`text-muted-2 line-through decoration-muted-2 ${DIM} ${off}`}>{text}</span>;
+        if (unsaid.includes(i)) return <span key={i} className={`text-muted line-through decoration-muted ${DIM} ${off}`}>{text}</span>;
         return <Held key={i} lifted={i === activeSeg} className={`${DIM} ${off}`} onHold={() => onProvenance(i)}>{text}</Held>;
       })}
     </>

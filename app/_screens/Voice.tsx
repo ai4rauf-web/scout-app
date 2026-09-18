@@ -107,7 +107,7 @@ export default function Voice({
       <div className="relative z-10 min-h-0 flex-1 overflow-y-auto px-6 pt-7" aria-live="polite">
         {listening ? (
           <p dir="auto" className={`text-[22px] font-medium leading-[1.35] tracking-[-0.01em] text-ink ${count > 0 && count < words.length && !paused ? "cursor-blink" : ""}`}>
-            {spoken || <span className="text-muted-2">Say what you’re looking for.</span>}
+            {spoken || <span className="text-muted">Say what you’re looking for.</span>}
           </p>
         ) : (
           <p dir="auto" className="rise text-[20px] font-medium leading-[1.4] tracking-[-0.01em] text-ink">

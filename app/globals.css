@@ -32,6 +32,9 @@
   --positive: #39A76D;
   --negative: #EA3934;
   --warning: #D97706;
+  /* Text-safe shades: the brand green and red are 3.0 and 4.1 on white, under AA for text */
+  --positive-text: #257A4E;
+  --negative-text: #D32F2A;
 
   /* Brand */
   --brand-mark: #EF5E4E;
@@ -75,6 +78,8 @@
     --ink-2: #D0CDD7;
     --muted: #A3A0AC;
     --muted-2: #6E6B77;
+  --positive-text: #4CB880;
+  --negative-text: #FF6B66;
     --accent: #B5B0E6;
     --accent-hover: #D1CFED;
     --accent-soft: rgba(181, 176, 230, 0.14);
@@ -102,6 +107,8 @@
   --ink-2: #D0CDD7;
   --muted: #A3A0AC;
   --muted-2: #6E6B77;
+  --positive-text: #4CB880;
+  --negative-text: #FF6B66;
   --accent: #B5B0E6;
   --accent-hover: #D1CFED;
   --accent-soft: rgba(181, 176, 230, 0.14);
@@ -139,6 +146,8 @@
   --color-stated: var(--stated);
   --color-inferred: var(--inferred);
   --color-positive: var(--positive);
+  --color-positive-text: var(--positive-text);
+  --color-negative-text: var(--negative-text);
   --color-negative: var(--negative);
   --color-warning: var(--warning);
   --color-brand-mark: var(--brand-mark);

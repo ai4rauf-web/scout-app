@@ -140,7 +140,7 @@ export default function TextSheet({
             rows={1}
             placeholder={placeholder}
             aria-label="Your question"
-            className="block w-full resize-none bg-transparent text-[24px] font-medium leading-[1.25] tracking-[-0.01em] text-ink caret-accent placeholder:text-muted-2 focus:outline-none"
+            className="block w-full resize-none bg-transparent text-[24px] font-medium leading-[1.25] tracking-[-0.01em] text-ink caret-accent placeholder:text-muted focus:outline-none"
           />
         </div>
 
@@ -157,7 +157,7 @@ export default function TextSheet({
                 type="button"
                 onClick={() => { setDraft(r); inputRef.current?.focus(); }}
                 aria-label={`Use “${r}” as a starting point`}
-                className="grid h-11 w-11 shrink-0 place-items-center text-muted-2 transition-colors hover:text-accent"
+                className="grid h-11 w-11 shrink-0 place-items-center text-muted transition-colors hover:text-accent"
               >
                 <FillArrow />
               </button>

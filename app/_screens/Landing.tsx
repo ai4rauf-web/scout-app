@@ -22,20 +22,21 @@ const FEATURED = [
 ];
 
 type Tone = "positive" | "negative" | "neutral";
-const TONE: Record<Tone, string> = { positive: "text-positive", negative: "text-negative", neutral: "text-accent" };
+const TONE: Record<Tone, string> = { positive: "text-positive-text", negative: "text-negative-text", neutral: "text-accent" };
 
 const INSIGHTS: { title: string; line: string; value: string; tone: Tone; glyph: GlyphKind; q: string }[] = [
-  { title: "Dubai Marina", line: "Avg price / sqft", value: "−2.1%", tone: "negative", glyph: "down", q: "Why did Dubai Marina prices drop this month?" },
-  { title: "Dubai South", line: "New launches", value: "+29", tone: "positive", glyph: "up", q: "Show me the new launches in Dubai South" },
-  { title: "Down payments", line: "Market average", value: "13%", tone: "neutral", glyph: "percent", q: "Which new launches need the lowest down payment?" },
-  { title: "Off-plan", line: "Share of all sales", value: "72%", tone: "neutral", glyph: "share", q: "Is off-plan a good idea right now?" },
-  { title: "Business Bay", line: "Rental yield", value: "6.4%", tone: "positive", glyph: "yield", q: "What is the rental yield in Business Bay?" },
+  // The same five metrics the live Scout shows under Market Pulse (Sep 2026)
+  { title: "New launches", line: "This month · 23 fewer", value: "22", tone: "negative", glyph: "down", q: "Show me the new launches this month" },
+  { title: "Avg down payment", line: "vs 20% baseline", value: "13%", tone: "neutral", glyph: "percent", q: "Which new launches need the lowest down payment?" },
+  { title: "Dubai South", line: "Hottest community · projects", value: "29", tone: "positive", glyph: "up", q: "Show me the new launches in Dubai South" },
+  { title: "Off-plan momentum", line: "−1.8% vs last month", value: "71%", tone: "negative", glyph: "share", q: "Is off-plan a good idea right now?" },
+  { title: "Primary market share", line: "+0.5% vs last month", value: "62%", tone: "positive", glyph: "yield", q: "How much of the market is primary sales?" },
 ];
 
 const PROMPTS = [
   "Apartments under 2M, ready this year",
   "Best communities for a family villa",
-  "New off-plan launches with 20% down",
+  "Off-plan launches under 20% down",
 ];
 
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
@@ -82,7 +83,7 @@ export default function Landing({
             type="button"
             onClick={onOpenScreens}
             aria-label="Beta. Open prototype screens"
-            className="rounded-full bg-accent-tint px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.12em] text-accent transition-transform active:scale-95"
+            className="min-h-6 rounded-full bg-accent-tint px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.12em] text-accent transition-transform active:scale-95"
           >
             Beta
           </button>
@@ -134,7 +135,7 @@ export default function Landing({
                   tabIndex={showContinue ? 0 : -1}
                   onClick={onDismissContinue}
                   aria-label="Dismiss this suggestion"
-                  className="absolute right-0 top-0 grid h-10 w-10 place-items-center rounded-full text-muted-2 transition-colors hover:text-ink"
+                  className="absolute right-0 top-0 grid h-10 w-10 place-items-center rounded-full text-muted transition-colors hover:text-ink"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
                     <line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" />
@@ -213,7 +214,7 @@ export default function Landing({
                   type="button"
                   onClick={() => openText(p)}
                   aria-label={`Edit “${p}” before asking`}
-                  className="grid h-11 w-11 shrink-0 place-items-center text-muted-2 transition-colors hover:text-accent"
+                  className="grid h-11 w-11 shrink-0 place-items-center text-muted transition-colors hover:text-accent"
                 >
                   <FillArrow />
                 </button>

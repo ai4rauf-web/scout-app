@@ -17,7 +17,7 @@ const GROUPS: { label: string; rows: Row[] }[] = [
     label: "Yesterday",
     rows: [
       { title: "3BR villa in JLT under 5M", meta: "Yesterday · 9 messages" },
-      { title: "New off-plan launches with 20% down", meta: "Yesterday · 4 messages" },
+      { title: "Off-plan launches under 20% down", meta: "Yesterday · 4 messages" },
     ],
   },
   {
@@ -114,7 +114,7 @@ function Item({ title, meta, live, onClick }: { title: string; meta: string; liv
             {meta}
           </span>
         </span>
-        <span className="shrink-0 text-muted-2 transition-colors group-hover:text-accent"><Chevron /></span>
+        <span className="shrink-0 text-muted transition-colors group-hover:text-accent"><Chevron /></span>
       </button>
     </li>
   );
