@@ -450,7 +450,8 @@ export function digScript(base: Script, index: number): { q: string; script: Scr
         },
         { t: ". Ask me about payment plans, unit mix or the area " }, cite(1), { t: "." },
       ]
-    : [{ t: name, kind: "stated" }, { t: L.digBody(l.meta, l.price) }, cite(1), { t: base.lang === "zh" ? "。" : "." }];
+    // The card shows only the translated name, so the name on the building and the contract is given once here
+    : [{ t: name, kind: "stated" }, ...(l.local ? [{ t: ` (${l.name})` }] : []), { t: L.digBody(l.meta, l.price) }, cite(1), { t: base.lang === "zh" ? "。" : "." }];
   return {
     q: L.digTitle(name),
     script: {

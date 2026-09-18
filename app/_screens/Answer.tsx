@@ -80,7 +80,7 @@ export default function Answer({
           </IconBtn>
           <IconBtn label="Share"><path d="M12 16V4" /><polyline points="7 9 12 4 17 9" /><path d="M5 14v5h14v-5" /></IconBtn>
           {/* New chat lives here because a conversation is under way */}
-          <IconBtn label="New conversation" onClick={onNewChat}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></IconBtn>
+          <IconBtn label="New conversation" onClick={onNewChat}><NewChatGlyph /></IconBtn>
         </div>
       </header>
 
@@ -100,6 +100,7 @@ export default function Answer({
             onRefine={(r) => onRefine(t, r)}
             onDig={(i) => onDig(t, i)}
             onWhatsApp={(name) => setToast(STR[t.script.lang].waToast(name))}
+            onNotify={setToast}
             onProvenance={(seg) => onProvenance({ turnId: t.id, seg })}
             onCloseProv={onCloseProv}
             onUnsay={(seg) => onUnsay(t, seg)}
@@ -123,11 +124,11 @@ export default function Answer({
 }
 
 function TurnBlock({
-  turn, first, latest, prevQLang, home, onToggleLang, dim, activeSeg, onDone, onRefine, onDig, onWhatsApp, onProvenance, onCloseProv, onUnsay,
+  turn, first, latest, prevQLang, home, onToggleLang, dim, activeSeg, onDone, onRefine, onDig, onWhatsApp, onNotify, onProvenance, onCloseProv, onUnsay,
 }: {
   turn: Turn; first: boolean; latest: boolean; dim: boolean; activeSeg: number | null;
   prevQLang: Lang | null; home: Lang; onToggleLang: () => void;
-  onDone: () => void; onRefine: (r: Refine) => void; onDig: (listing: number) => void; onWhatsApp: (name: string) => void; onProvenance: (seg: number) => void;
+  onDone: () => void; onRefine: (r: Refine) => void; onDig: (listing: number) => void; onWhatsApp: (name: string) => void; onNotify: (msg: string) => void; onProvenance: (seg: number) => void;
   onCloseProv: () => void; onUnsay: (seg: number) => void;
 }) {
   const { script } = turn;
@@ -139,6 +140,35 @@ function TurnBlock({
   const [step, setStep] = useState(0);
   const [tab, setTab] = useState<"listings" | "map" | "sources">("listings");
   const [marketOpen, setMarketOpen] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+
+  // What Scout would say aloud: the answer without citation numbers or anything the user has unsaid
+  const spoken = script.segs
+    .filter((seg, i) => !("kind" in seg && seg.kind === "cite") && !(turn.unsaid ?? []).includes(i))
+    .map((seg) => seg.t).join("").replace(/\s+([.。])/g, "$1").trim();
+
+  const stopSpeaking = () => { window.speechSynthesis?.cancel(); setSpeaking(false); };
+  const listen = () => {
+    if (speaking) return stopSpeaking();
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(spoken);
+    // The voice follows the turn, so an Arabic answer is read in Arabic
+    u.lang = L.speech;
+    u.rate = 1;
+    u.onend = () => setSpeaking(false);
+    u.onerror = () => setSpeaking(false);
+    setSpeaking(true);
+    synth.speak(u);
+  };
+  // Never keep talking over a new turn or after leaving the screen
+  useEffect(() => () => { window.speechSynthesis?.cancel(); }, []);
+  useEffect(() => { if (!latest && speaking) stopSpeaking(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [latest]);
+
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(spoken); onNotify(L.copied); } catch { /* clipboard blocked: stay quiet */ }
+  };
   const ref = useRef<HTMLElement | null>(null);
   const off = dim ? "opacity-25" : "";
 
@@ -248,14 +278,12 @@ function TurnBlock({
                 return (
                   <div key={l.name} className="flex w-[244px] shrink-0 snap-start flex-col overflow-hidden rounded-[16px] border border-border bg-bg-elev shadow-[var(--shadow-1)]">
                     <div className="relative h-[112px]">
-                      <ListingPhoto src={l.img} alt={l.name} />
+                      <ListingPhoto src={l.img} alt={l.local ?? l.name} />
                       <span className="absolute start-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] font-bold tabular-nums text-bg">{i + 1}</span>
                       {l.status && <span className="absolute end-2 top-2 rounded-full bg-black/60 px-2 py-[3px] text-[10px] font-semibold text-white backdrop-blur-sm">{l.status}</span>}
                     </div>
                     <div className="flex flex-1 flex-col px-3 pb-3 pt-2.5">
                       <p className="truncate text-[13px] font-semibold text-ink">{l.local ?? l.name}</p>
-                      {/* The Latin name is what is on the building and the contract, so it stays */}
-                      {l.local && <p className="truncate text-start text-[11px] text-muted"><bdi lang="en">{l.name}</bdi></p>}
                       <p className="mt-0.5 truncate text-[12px] text-muted">{l.meta}</p>
                       {l.terms && <p className="truncate text-[12px] text-muted">{l.terms}</p>}
                       <p className="mt-1 text-[14px] font-semibold tabular-nums text-ink">{l.price}</p>
@@ -279,8 +307,20 @@ function TurnBlock({
           {latest && (
             <div className={`rise mt-4 flex items-center gap-1 text-muted ${DIM} ${off}`} style={d(160)}>
               <Action label={L.compare}><rect x="4" y="5" width="6" height="14" rx="1.5" /><rect x="14" y="5" width="6" height="14" rx="1.5" /></Action>
-              <Action label={L.listen}><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="3" y="14" width="4" height="6" rx="1.5" /><rect x="17" y="14" width="4" height="6" rx="1.5" /></Action>
-              <Action label={L.copy}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></Action>
+              {speaking ? (
+                // Scout is speaking, so the gradient appears; the same button stops it
+                <button type="button" onClick={listen} aria-pressed className="flex h-9 items-center gap-2 rounded-full bg-accent-tint px-3 text-[12px] font-semibold text-accent">
+                  <span className="flex h-4 items-center gap-[2px]" aria-hidden>
+                    {[0, 1, 2, 3].map((i) => (
+                      <i key={i} className="block h-2.5 w-[2.5px] rounded-full" style={{ background: ["#7363BA", "#9358A0", "#B34C65", "#D2412B"][i], animation: `mic-wave ${640 + i * 90}ms ease-in-out ${i * 70}ms infinite` }} />
+                    ))}
+                  </span>
+                  {L.stop}
+                </button>
+              ) : (
+                <Action label={L.listen} onClick={listen}><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="3" y="14" width="4" height="6" rx="1.5" /><rect x="17" y="14" width="4" height="6" rx="1.5" /></Action>
+              )}
+              <Action label={L.copy} onClick={copy}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></Action>
             </div>
           )}
 
@@ -470,9 +510,14 @@ function IconBtn({ children, label, onClick, active }: { children: React.ReactNo
   );
 }
 
-function Action({ children, label }: { children: React.ReactNode; label: string }) {
+/** Compose, not plus: plus already means "add this refinement" further down the same screen. */
+export function NewChatGlyph() {
+  return (<><path d="M12 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" /><path d="M17.6 3.9a1.8 1.8 0 0 1 2.5 2.5L12.5 14 9 15l1-3.5z" /></>);
+}
+
+function Action({ children, label, onClick }: { children: React.ReactNode; label: string; onClick?: () => void }) {
   return (
-    <button type="button" className="flex h-9 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium transition-colors hover:bg-accent-tint hover:text-accent">
+    <button type="button" onClick={onClick} className="flex h-9 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium transition-colors hover:bg-accent-tint hover:text-accent">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{children}</svg>
       {label}
     </button>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { StatusBar, Chevron } from "../_components/Chrome";
+import { NewChatGlyph } from "./Answer";
 
 type Row = { title: string; meta: string };
 
@@ -72,7 +73,7 @@ export default function History({
         </section>
 
         <button type="button" onClick={() => leave(onNew)} className="rise mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-accent text-[14px] font-semibold text-accent transition-colors hover:bg-accent-tint active:scale-[0.99]" style={{ animationDelay: "40ms" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><NewChatGlyph /></svg>
           New conversation
         </button>
 

@@ -30,6 +30,7 @@ type Strings = {
   thinkingRefine: (n: number, noun: string) => string[];
   thinkingUnsay: (n: number, noun: string) => string[];
   switched: string;
+  stop: string; copied: string; speech: string;
   whatsapp: string; digDeeper: string; market: string; disclaimer: string; scoutAsks: string;
   digTitle: (name: string) => string;
   digBody: (meta: string, price: string) => string;
@@ -54,6 +55,7 @@ export const STR: Record<Lang, Strings> = {
     thinkingRefine: (n, noun) => ["Applying your change", `Re-ranking ${n} ${noun}`],
     thinkingUnsay: (n, noun) => ["Removing that assumption", `Re-ranking ${n} ${noun}`],
     switched: "Switched to English",
+    stop: "Stop", copied: "Copied", speech: "en-US",
     whatsapp: "WhatsApp", digDeeper: "Dig deeper", market: "Market data & analysis",
     disclaimer: "Scout is AI and can make mistakes.", scoutAsks: "Scout asks",
     digTitle: (name) => `Tell me more about ${name}`,
@@ -77,6 +79,7 @@ export const STR: Record<Lang, Strings> = {
     thinkingRefine: (n, noun) => ["正在应用你的修改", `正在重新排序 ${n} 套${noun}`],
     thinkingUnsay: (n, noun) => ["正在去掉这个推测", `正在重新排序 ${n} 套${noun}`],
     switched: "已切换到中文",
+    stop: "停止", copied: "已复制", speech: "zh-CN",
     whatsapp: "WhatsApp", digDeeper: "深入了解", market: "市场数据与分析",
     disclaimer: "Scout 是 AI，可能会出错。", scoutAsks: "Scout 想问",
     digTitle: (name) => `详细介绍一下 ${name}`,
@@ -100,6 +103,7 @@ export const STR: Record<Lang, Strings> = {
     thinkingRefine: (n, noun) => ["أطبّق تعديلك", `أعيد ترتيب ${n} ${noun}`],
     thinkingUnsay: (n, noun) => ["أزيل هذا الافتراض", `أعيد ترتيب ${n} ${noun}`],
     switched: "تم التبديل إلى العربية",
+    stop: "إيقاف", copied: "تم النسخ", speech: "ar-SA",
     whatsapp: "واتساب", digDeeper: "تفاصيل أكثر", market: "بيانات السوق والتحليل",
     disclaimer: "سكاوت ذكاء اصطناعي وقد يخطئ.", scoutAsks: "سكاوت يسأل",
     digTitle: (name) => `أخبرني المزيد عن ${name}`,
