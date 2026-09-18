@@ -586,8 +586,8 @@ function AllListings({ turn, onClose, onDig }: { turn: Turn; onClose: () => void
                   {/* The name gets the whole line; status rides with the price so it never squeezes it */}
                   <span className="block truncate text-[14px] font-semibold text-ink">{l.local ?? l.name}</span>
                   <span className="block truncate text-[12px] text-muted">{l.meta}</span>
-                  <span className="mt-0.5 flex items-center gap-2">
-                    <span className="text-[13px] font-semibold tabular-nums text-ink">{l.price}</span>
+                  <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="whitespace-nowrap text-[13px] font-semibold tabular-nums text-ink">{l.price}</span>
                     {l.status && <span className="shrink-0 rounded-full bg-accent-tint px-1.5 py-px text-[10px] font-semibold text-accent">{l.status}</span>}
                   </span>
                 </span>
