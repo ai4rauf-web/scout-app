@@ -269,6 +269,14 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .fade-in    { animation: fade-in 260ms ease both; }
 .fade-out   { animation: fade-out 220ms ease both; }
 
+/* Voice ground: a quiet dot grid that fades towards the edges */
+.dot-grid {
+  background-image: radial-gradient(var(--accent-soft) 1.1px, transparent 1.2px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(120% 70% at 50% 38%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(120% 70% at 50% 38%, #000 35%, transparent 100%);
+}
+
 /* Scout is thinking */
 @keyframes orb-pulse {
   0%, 100% { transform: scale(0.85); opacity: 0.7; }

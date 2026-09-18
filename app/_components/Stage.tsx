@@ -7,6 +7,7 @@ import Landing from "../_screens/Landing";
 import Placeholder from "../_screens/Placeholder";
 import TextSheet from "../_screens/TextSheet";
 import Answer, { type Turn } from "../_screens/Answer";
+import Voice, { HEARD_DEFAULT, cleanHeard } from "../_screens/Voice";
 import { pickScript, refineScript, type Refine } from "../_lib/scripts";
 
 const DEFAULT_Q = "New Emaar launches in Dubai South under 2M";
@@ -21,6 +22,8 @@ export default function Stage() {
   const [scale, setScale] = useState(1);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
+  const [heard, setHeard] = useState("");
+  const [voiceKey, setVoiceKey] = useState(0);
   // The text sheet sits over whichever full screen opened it
   const [base, setBase] = useState<"landing" | "answer">("landing");
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -46,6 +49,8 @@ export default function Stage() {
     if (s === "landing" || s === "answer") setBase(s);
     // Arriving at the answer with nothing asked yet: resume a finished thread
     if (s === "answer" && turns.length === 0) setTurns([makeTurn(DEFAULT_Q, true)]);
+    if (s === "voice") { setHeard(""); setVoiceKey((k) => k + 1); }
+    if (s === "confirm" && !heard) setHeard(HEARD_DEFAULT);
     setScreen(s);
   };
 
@@ -80,7 +85,8 @@ export default function Stage() {
     setRunKey((k) => k + 1);
   };
 
-  const showing = screen === "text" ? base : screen;
+  const inVoice = screen === "voice" || screen === "confirm";
+  const showing = screen === "text" || inVoice ? base : screen;
 
   return (
     <div ref={stageRef} className="stage text-ink">
@@ -172,6 +178,18 @@ export default function Stage() {
               />
             )}
             {showing !== "landing" && showing !== "answer" && <Placeholder screen={showing} go={go} />}
+            {inVoice && (
+              <Voice
+                key={voiceKey}
+                phase={screen as "voice" | "confirm"}
+                heard={heard}
+                onHeard={(t) => { setHeard(t); setScreen("confirm"); }}
+                onCancel={() => setScreen(base)}
+                onEdit={() => { setDraft(cleanHeard(heard)); setScreen("text"); }}
+                onRerecord={() => go("voice")}
+                onSend={() => ask(cleanHeard(heard))}
+              />
+            )}
             {screen === "text" && (
               <TextSheet
                 draft={draft}
