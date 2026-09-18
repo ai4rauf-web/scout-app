@@ -213,7 +213,7 @@ function TurnBlock({
                   <div className="px-3 pb-3 pt-2.5">
                     <p className="truncate text-[13px] font-semibold text-ink">{l.local ?? l.name}</p>
                     {/* The Latin name is what is on the building and the contract, so it stays */}
-                    {l.local && <p dir="ltr" lang="en" className="truncate text-start text-[11px] text-muted-2">{l.name}</p>}
+                    {l.local && <p className="truncate text-start text-[11px] text-muted-2"><bdi lang="en">{l.name}</bdi></p>}
                     <p className="mt-0.5 truncate text-[12px] text-muted">{l.meta}</p>
                     <p className="mt-1 text-[14px] font-semibold tabular-nums text-ink">{l.price}</p>
                   </div>
