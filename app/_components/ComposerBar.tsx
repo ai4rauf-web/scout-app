@@ -37,7 +37,7 @@ export default function ComposerBar({
   const rtl = /[؀-ۿ]/.test(hint);
 
   return (
-    <div className="flex items-center gap-1 rounded-full border border-border bg-bg-elev p-1 shadow-[var(--shadow-2)]">
+    <div className="scout-hairline flex items-center gap-1 rounded-full p-1 shadow-[var(--shadow-2)]">
       <span className="grid h-11 w-11 shrink-0 place-items-center text-[11px] font-bold tracking-[0.04em] text-accent">
         {chip}
       </span>
@@ -57,7 +57,7 @@ export default function ComposerBar({
         type="button"
         onClick={onVoice}
         aria-label="Ask with your voice"
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-accent transition-colors hover:bg-accent-tint active:scale-95"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors hover:bg-accent-tint active:scale-95"
       >
         <WaveformIcon />
       </button>

@@ -36,7 +36,15 @@
   /* Brand */
   --brand-mark: #EF5E4E;
   --gradient-brand: linear-gradient(to right, #7363BA, #D2412B);
-  --gradient-purple: radial-gradient(60% 60% at 20% 10%, rgba(115, 99, 186, 0.28), transparent 70%);
+  --gradient-purple:
+    radial-gradient(60% 60% at 20% 10%, rgba(115, 99, 186, 0.28), transparent 70%),
+    radial-gradient(60% 45% at 100% 96%, rgba(210, 65, 43, 0.09), transparent 70%);
+
+  /* Scout's presence. Solid purple is the user and the interface; the gradient is Scout. */
+  --scout: linear-gradient(90deg, #7363BA, #D2412B);
+  --scout-v: linear-gradient(180deg, #7363BA, #D2412B);
+  --scout-hairline: linear-gradient(90deg, rgba(115, 99, 186, 0.35), rgba(211, 65, 43, 0.35)); /* PF's --gradient-chip-border */
+  --scout-wash: linear-gradient(90deg, rgba(115, 99, 186, 0.18), rgba(210, 65, 43, 0.13));
 
   /* Shadows — purple-tinted */
   --shadow-1: 0 1px 3px rgba(58, 48, 127, 0.08);
@@ -75,7 +83,11 @@
     --accent-light: #A099D7;
     --stated: #B5B0E6;
     --inferred: #7A6FCC;
-    --gradient-purple: radial-gradient(60% 60% at 20% 10%, rgba(122, 111, 204, 0.24), transparent 70%);
+    --gradient-purple:
+      radial-gradient(60% 60% at 20% 10%, rgba(122, 111, 204, 0.24), transparent 70%),
+      radial-gradient(60% 45% at 100% 96%, rgba(226, 92, 70, 0.10), transparent 70%);
+    --scout-hairline: linear-gradient(90deg, rgba(140, 126, 214, 0.60), rgba(226, 92, 70, 0.60));
+    --scout-wash: linear-gradient(90deg, rgba(140, 126, 214, 0.26), rgba(226, 92, 70, 0.20));
     --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.40);
     --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.50);
     --shadow-3: 0 4px 16px rgba(0, 0, 0, 0.60);
@@ -98,7 +110,11 @@
   --accent-light: #A099D7;
   --stated: #B5B0E6;
   --inferred: #7A6FCC;
-  --gradient-purple: radial-gradient(60% 60% at 20% 10%, rgba(122, 111, 204, 0.24), transparent 70%);
+  --gradient-purple:
+    radial-gradient(60% 60% at 20% 10%, rgba(122, 111, 204, 0.24), transparent 70%),
+    radial-gradient(60% 45% at 100% 96%, rgba(226, 92, 70, 0.10), transparent 70%);
+  --scout-hairline: linear-gradient(90deg, rgba(140, 126, 214, 0.60), rgba(226, 92, 70, 0.60));
+  --scout-wash: linear-gradient(90deg, rgba(140, 126, 214, 0.26), rgba(226, 92, 70, 0.20));
   --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.40);
   --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.50);
   --shadow-3: 0 4px 16px rgba(0, 0, 0, 0.60);
@@ -181,9 +197,10 @@ html, body {
 .cursor-blink::after {
   content: "";
   display: inline-block;
-  width: 1px;
+  width: 2px;
   height: 1em;
-  background: var(--accent);
+  border-radius: 1px;
+  background: var(--scout-v);
   margin-left: 2px;
   vertical-align: text-bottom;
   animation: cursor-blink 900ms steps(2) infinite;
@@ -291,7 +308,31 @@ input:focus-visible, textarea:focus-visible { outline: none; }
   0%, 100% { transform: scale(0.85); opacity: 0.7; }
   50%      { transform: scale(1.1);  opacity: 1; }
 }
-.orb { animation: orb-pulse 1100ms ease-in-out infinite; }
+.orb { animation: orb-pulse 1100ms ease-in-out infinite; background: linear-gradient(135deg, #7363BA, #D2412B); }
+
+/* A slow pass of Scout's colours across the thinking line */
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.shimmer {
+  background-image: linear-gradient(90deg, var(--muted) 0%, var(--muted) 38%, #7363BA 46%, #D2412B 54%, var(--muted) 62%, var(--muted) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 2400ms linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .shimmer { background-image: none; color: var(--muted); } }
+
+/* A 1px gradient border that respects the radius: the fill paints the padding box, the gradient the border box */
+.scout-hairline {
+  border: 1px solid transparent;
+  background: linear-gradient(var(--bg-elev), var(--bg-elev)) padding-box, var(--scout-hairline) border-box;
+}
+.scout-bar { background: var(--scout-v); }
+.scout-wash {
+  background-image: var(--scout-wash);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
 
 /* Horizontal strips: scroll without a visible bar */
 .no-scrollbar { scrollbar-width: none; }

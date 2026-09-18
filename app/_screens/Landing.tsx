@@ -165,9 +165,9 @@ export default function Landing({
           </div>
         </section>
 
-        {/* Market insights — compact cards in a carousel, about half the old height */}
+        {/* Market pulse — compact cards in a carousel, about half the old height */}
         <section className="rise pt-7" style={d(180)}>
-          <Label className="px-5">Market insights</Label>
+          <Label className="px-5">Market pulse</Label>
           <div className="no-scrollbar mt-3 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-1">
             {INSIGHTS.map((m) => (
               <button

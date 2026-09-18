@@ -142,8 +142,9 @@ export default function Voice({
               {Array.from({ length: 13 }).map((_, i) => (
                 <span
                   key={i}
-                  className="block w-[3px] rounded-full bg-accent"
+                  className="block w-[3px] rounded-full"
                   style={{
+                    backgroundColor: `rgb(${Math.round(115 + (210 - 115) * (i / 12))},${Math.round(99 + (65 - 99) * (i / 12))},${Math.round(186 + (43 - 186) * (i / 12))})`,
                     height: 6 + ((i * 7) % 5) * 4,
                     animation: `mic-wave ${700 + (i % 4) * 90}ms ease-in-out ${i * 60}ms infinite`,
                     animationPlayState: paused || count === 0 ? "paused" : "running",

@@ -24,12 +24,13 @@ export function StatusBar() {
 
 /** Four-bar waveform — Scout's voice affordance in the composer. */
 export function WaveformIcon({ size = 20 }: { size?: number }) {
+  // Voice is how Scout hears you, so the glyph carries Scout's colours — the same ramp as the sphere
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <rect x="4" y="9" width="2.6" height="6" rx="1.3" />
-      <rect x="8.8" y="4" width="2.6" height="16" rx="1.3" />
-      <rect x="13.6" y="8" width="2.6" height="8" rx="1.3" />
-      <rect x="18.4" y="6" width="2.6" height="12" rx="1.3" />
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <rect x="4" y="9" width="2.6" height="6" rx="1.3" fill="#7363BA" />
+      <rect x="8.8" y="4" width="2.6" height="16" rx="1.3" fill="#9358A0" />
+      <rect x="13.6" y="8" width="2.6" height="8" rx="1.3" fill="#B34C65" />
+      <rect x="18.4" y="6" width="2.6" height="12" rx="1.3" fill="#D2412B" />
     </svg>
   );
 }

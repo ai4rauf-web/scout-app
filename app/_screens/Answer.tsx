@@ -177,8 +177,8 @@ function TurnBlock({
 
       {phase === "thinking" && (
         <div className="mt-6 flex items-center gap-3" aria-live="polite">
-          <span className="orb h-3 w-3 rounded-full bg-accent" aria-hidden />
-          <span key={step} className="rise text-[14px] text-muted">{script.thinking[step]}…</span>
+          <span className="orb h-3 w-3 rounded-full" aria-hidden />
+          <span key={step} className="rise shimmer text-[14px]">{script.thinking[step]}…</span>
         </div>
       )}
 
@@ -312,7 +312,7 @@ function Held({
       onPointerCancel={clear}
       onContextMenu={(e) => e.preventDefault()}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onHold(); } }}
-      className={`no-select prov-inferred cursor-pointer rounded-[3px] ${className} ${pressing || lifted ? "bg-accent-tint" : ""}`}
+      className={`no-select prov-inferred cursor-pointer rounded-[3px] ${className} ${pressing || lifted ? "scout-wash" : ""}`}
     >
       {children}
     </span>
@@ -353,7 +353,7 @@ function ProvCard({
         <span className="absolute -top-[7px] h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-border bg-bg-elev" style={{ left: caret }} aria-hidden />
       )}
       <div className="relative overflow-hidden rounded-[16px] py-4 pe-4 ps-5">
-        <span className="absolute inset-y-0 start-0 w-1 bg-inferred" aria-hidden />
+        <span className="scout-bar absolute inset-y-0 start-0 w-1" aria-hidden />
         <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">{L.provFrom}</p>
         <p dir="auto" className="mt-1.5 text-start text-[15px] font-semibold text-ink">{L.quote(seg.from)}</p>
         <p className="mt-2 text-[13px] leading-[1.5] text-ink-2">{seg.why}</p>
