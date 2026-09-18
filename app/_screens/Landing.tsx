@@ -96,7 +96,7 @@ export default function Landing({ go }: { go: Go }) {
         {/* Featured listings */}
         <section className="rise pt-7" style={d(120)}>
           <Label className="px-5">Featured · from Property Finder</Label>
-          <div className="no-scrollbar mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1">
+          <div className="no-scrollbar mt-3 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-1">
             {FEATURED.map((f) => (
               <button
                 key={f.name}
