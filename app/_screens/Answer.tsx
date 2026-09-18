@@ -42,14 +42,14 @@ export default function Answer({
   onToggleLang: (turn: Turn) => void;
 }) {
   const [saved, setSaved] = useState(false);
-  // The chrome speaks the language of the latest reply; earlier turns keep their own
+  // Navigation stays in the app's own direction so Back never changes sides mid-thread.
+  // Only the places you read and write follow the language: each turn, and the composer.
   const current: Lang = turns.length ? turns[turns.length - 1].script.lang : "en";
   const home: Lang = turns.length ? turns[0].qLang : "en";
   const dim = prov !== null;
 
   return (
     <div
-      dir={isRtl(current) ? "rtl" : "ltr"}
       className="absolute inset-0 flex flex-col"
       // While the card is open, a tap anywhere else only dismisses it
       onClickCapture={(e) => {
@@ -65,7 +65,7 @@ export default function Answer({
       <StatusBar />
 
       <header className={`relative z-10 flex h-14 shrink-0 items-center justify-between px-3 pt-[env(safe-area-inset-top)] ${DIM} ${dim ? "opacity-25" : ""}`}>
-        <IconBtn label="Back" onClick={() => go("landing")} flip><polyline points="15 18 9 12 15 6" /></IconBtn>
+        <IconBtn label="Back" onClick={() => go("landing")}><polyline points="15 18 9 12 15 6" /></IconBtn>
         <div className="flex items-center">
           <IconBtn label={saved ? "Saved" : "Save this search"} onClick={() => setSaved((v) => !v)} active={saved}>
             <path d="M6 4h12v17l-6-4-6 4z" fill={saved ? "currentColor" : "none"} />
@@ -99,7 +99,7 @@ export default function Answer({
 
       <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-3 min-[900px]:pb-7">
         <div className="pointer-events-none absolute inset-x-0 -top-6 bottom-0 bg-gradient-to-t from-bg via-bg/95 to-transparent" aria-hidden />
-        <div className={`relative ${DIM} ${dim ? "opacity-25" : ""}`}>
+        <div dir={isRtl(current) ? "rtl" : "ltr"} lang={current} className={`relative ${DIM} ${dim ? "opacity-25" : ""}`}>
           <ComposerBar label={STR[current].followUp} chip={chipLabel[current]} onField={onFollowUp} onVoice={onVoice} />
         </div>
       </div>
@@ -383,10 +383,10 @@ function Chip({ children, active, onClick }: { children: React.ReactNode; active
   );
 }
 
-function IconBtn({ children, label, onClick, active, flip }: { children: React.ReactNode; label: string; onClick?: () => void; active?: boolean; flip?: boolean }) {
+function IconBtn({ children, label, onClick, active }: { children: React.ReactNode; label: string; onClick?: () => void; active?: boolean }) {
   return (
     <button type="button" aria-label={label} onClick={onClick} className={`grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-accent-tint active:scale-95 ${active ? "text-accent" : "text-ink"}`}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={flip ? "rtl:-scale-x-100" : ""} aria-hidden>{children}</svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{children}</svg>
     </button>
   );
 }

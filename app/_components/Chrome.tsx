@@ -3,7 +3,7 @@
 /** Simulated iOS status bar. Shown only inside the desktop frame — a real phone has its own. */
 export function StatusBar() {
   return (
-    <div className="statusbar relative z-10 h-11 shrink-0 items-center justify-between px-7 pt-2 text-ink">
+    <div dir="ltr" className="statusbar relative z-10 h-11 shrink-0 items-center justify-between px-7 pt-2 text-ink">
       <span className="text-[14px] font-semibold tabular-nums">9:41</span>
       <span className="flex items-center gap-1.5" aria-hidden>
         <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor">
