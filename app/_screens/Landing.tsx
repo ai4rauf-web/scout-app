@@ -16,9 +16,9 @@ function greetingFor(h: number) {
 }
 
 const FEATURED = [
-  { name: "Golf Views · Emaar South", meta: "2 BR · 1,474 sqft", price: "AED 1.7M", sponsored: false, img: "/listings/golf-views.jpg" },
+  { name: "Golf Trails · Emaar South", meta: "1–3 BR · Q4 2030", price: "From 1.06M", sponsored: false, img: "/listings/golf-views.jpg" },
   { name: "Marina Crown", meta: "2 BR · 1,494 sqft", price: "AED 1.9M", sponsored: true, img: "/listings/marina-crown.jpg" },
-  { name: "Greenway · Emaar South", meta: "3 BR · 1,810 sqft", price: "AED 2.4M", sponsored: false, img: "/listings/greenway.jpg" },
+  { name: "Golf Vale · Emaar South", meta: "1–3 BR · Q2 2030", price: "From 1.10M", sponsored: false, img: "/listings/greenway.jpg" },
 ];
 
 type Tone = "positive" | "negative" | "neutral";
