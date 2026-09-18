@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { Go } from "../_lib/types";
-import { isInferred, nounFor, type Inferred, type Refine, type Script, type Seg } from "../_lib/scripts";
+import { isInferred, nounFor, type Inferred, type Listing, type Refine, type Script, type Seg } from "../_lib/scripts";
 import { STR, chipLabel, isRtl, langName, type Lang } from "../_lib/i18n";
 import { StatusBar } from "../_components/Chrome";
 import ComposerBar from "../_components/ComposerBar";
@@ -45,6 +45,8 @@ export default function Answer({
   const [saved, setSaved] = useState(false);
   // WhatsApp leaves the app, so the prototype only says what would happen
   const [toast, setToast] = useState<string | null>(null);
+  // The full list belongs to one turn, so it opens in that turn's language
+  const [listFor, setListFor] = useState<Turn | null>(null);
   useEffect(() => {
     if (!toast) return;
     const t = window.setTimeout(() => setToast(null), 2600);
@@ -101,6 +103,7 @@ export default function Answer({
             onDig={(i) => onDig(t, i)}
             onWhatsApp={(name) => setToast(STR[t.script.lang].waToast(name))}
             onNotify={setToast}
+            onSeeAll={() => setListFor(t)}
             onProvenance={(seg) => onProvenance({ turnId: t.id, seg })}
             onCloseProv={onCloseProv}
             onUnsay={(seg) => onUnsay(t, seg)}
@@ -119,16 +122,24 @@ export default function Answer({
           <p className="mt-2 text-center text-[11px] leading-none text-muted">{STR[current].disclaimer}</p>
         </div>
       </div>
+
+      {listFor && (
+        <AllListings
+          turn={listFor}
+          onClose={() => setListFor(null)}
+          onDig={(i) => { const t = listFor; setListFor(null); onDig(t, i); }}
+        />
+      )}
     </div>
   );
 }
 
 function TurnBlock({
-  turn, first, latest, prevQLang, home, onToggleLang, dim, activeSeg, onDone, onRefine, onDig, onWhatsApp, onNotify, onProvenance, onCloseProv, onUnsay,
+  turn, first, latest, prevQLang, home, onToggleLang, dim, activeSeg, onDone, onRefine, onDig, onWhatsApp, onNotify, onSeeAll, onProvenance, onCloseProv, onUnsay,
 }: {
   turn: Turn; first: boolean; latest: boolean; dim: boolean; activeSeg: number | null;
   prevQLang: Lang | null; home: Lang; onToggleLang: () => void;
-  onDone: () => void; onRefine: (r: Refine) => void; onDig: (listing: number) => void; onWhatsApp: (name: string) => void; onNotify: (msg: string) => void; onProvenance: (seg: number) => void;
+  onDone: () => void; onRefine: (r: Refine) => void; onDig: (listing: number) => void; onWhatsApp: (name: string) => void; onNotify: (msg: string) => void; onSeeAll: () => void; onProvenance: (seg: number) => void;
   onCloseProv: () => void; onUnsay: (seg: number) => void;
 }) {
   const { script } = turn;
@@ -199,6 +210,8 @@ function TurnBlock({
   }, [phase, shown, total]);
 
   const hasInferred = script.segs.some((s) => isInferred(s));
+  // Never more cards than Scout says it found
+  const visible = script.listings.slice(0, Math.min(script.count, script.listings.length));
   const active = activeSeg !== null ? script.segs[activeSeg] : null;
 
   return (
@@ -271,9 +284,17 @@ function TurnBlock({
             </div>
           )}
 
-          <div className={`rise -mx-5 mt-5 ${DIM} ${off}`} style={d(100)}>
+          <div className={`rise mt-5 flex items-center justify-between gap-3 ${DIM} ${off}`} style={d(90)}>
+            <p className="min-w-0 truncate text-[12px] text-muted">{L.ranked(visible.length, script.count)}</p>
+            <button type="button" onClick={onSeeAll} className="-me-2 flex h-9 shrink-0 items-center gap-1 rounded-full px-2 text-[12px] font-semibold text-accent">
+              {L.seeAll(script.count)}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180" aria-hidden><polyline points="9 6 15 12 9 18" /></svg>
+            </button>
+          </div>
+
+          <div className={`rise -mx-5 mt-1 ${DIM} ${off}`} style={d(100)}>
             <div role="group" aria-label={L.listings} className="no-scrollbar flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-1">
-              {script.listings.map((l, i) => {
+              {visible.map((l, i) => {
                 const short = (l.local ?? l.name).split(" · ")[0];
                 return (
                   <div key={l.name} className="flex w-[244px] shrink-0 snap-start flex-col overflow-hidden rounded-[16px] border border-border bg-bg-elev shadow-[var(--shadow-1)]">
@@ -301,6 +322,13 @@ function TurnBlock({
                   </div>
                 );
               })}
+              {/* More matched than fit here: the last card says so and opens the rest */}
+              {script.count > visible.length && (
+                <button type="button" onClick={onSeeAll} className="flex w-[148px] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-accent/40 px-4 text-center text-accent transition-colors hover:bg-accent-tint">
+                  <span className="text-[22px] font-semibold tabular-nums leading-none">+{script.count - visible.length}</span>
+                  <span className="text-[12px] font-semibold leading-[1.3]">{L.seeAll(script.count)}</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -507,6 +535,68 @@ function IconBtn({ children, label, onClick, active }: { children: React.ReactNo
     <button type="button" aria-label={label} onClick={onClick} className={`grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-accent-tint active:scale-95 ${active ? "text-accent" : "text-ink"}`}>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{children}</svg>
     </button>
+  );
+}
+
+/**
+ * Every match in one scannable column, best first. A carousel is for glancing;
+ * this is for choosing. It stays a list of answers, not a filter panel.
+ */
+function AllListings({ turn, onClose, onDig }: { turn: Turn; onClose: () => void; onDig: (i: number) => void }) {
+  const { script } = turn;
+  const L = STR[script.lang];
+  const rows: Listing[] = script.listings.slice(0, Math.min(script.count, script.listings.length));
+  const [closing, setClosing] = useState(false);
+  const leave = (then: () => void) => { setClosing(true); window.setTimeout(then, 200); };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") leave(onClose); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div role="dialog" aria-modal="true" aria-label={L.seeAll(script.count)} lang={script.lang} dir={isRtl(script.lang) ? "rtl" : "ltr"}
+      className={`absolute inset-0 z-40 flex flex-col bg-bg ${closing ? "sheet-down" : "sheet-up"}`}>
+      <StatusBar />
+      <header dir="ltr" className="flex h-14 shrink-0 items-center gap-1 px-3 pt-[env(safe-area-inset-top)]">
+        <button type="button" autoFocus onClick={() => leave(onClose)} aria-label={L.close} className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink transition-colors hover:bg-accent-tint active:scale-95">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+        </button>
+        <div dir={isRtl(script.lang) ? "rtl" : "ltr"} className="min-w-0 flex-1 pe-3">
+          <h2 className="truncate text-[15px] font-semibold text-ink">{turn.q}</h2>
+          <p className="truncate text-[12px] text-muted">{L.ranked(rows.length, script.count)}</p>
+        </div>
+      </header>
+
+      <ol className="no-scrollbar flex-1 overflow-y-auto px-4 pb-8">
+        {rows.map((l, i) => {
+          const short = (l.local ?? l.name).split(" · ")[0];
+          return (
+            <li key={l.name} className="border-b border-border last:border-b-0">
+              <button type="button" onClick={() => leave(() => onDig(i))} aria-label={`${i + 1}. ${short} · ${L.digDeeper}`} className="group flex w-full items-center gap-3 py-3 text-start">
+                <span className="relative h-[60px] w-[84px] shrink-0 overflow-hidden rounded-[10px]">
+                  <ListingPhoto src={l.img} alt="" />
+                  <span className="absolute start-1 top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold tabular-nums text-bg">{i + 1}</span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5">
+                    <span className="truncate text-[14px] font-semibold text-ink">{l.local ?? l.name}</span>
+                    {l.status && <span className="shrink-0 rounded-full bg-accent-tint px-1.5 py-px text-[10px] font-semibold text-accent">{l.status}</span>}
+                  </span>
+                  <span className="block truncate text-[12px] text-muted">{l.meta}</span>
+                  <span className="block text-[13px] font-semibold tabular-nums text-ink">{l.price}</span>
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted transition-colors group-hover:text-accent rtl:rotate-180" aria-hidden><polyline points="9 6 15 12 9 18" /></svg>
+              </button>
+            </li>
+          );
+        })}
+        {script.count > rows.length && (
+          <li className="scout-wash mt-4 rounded-[14px] px-4 py-3 text-[12px] leading-[1.5] text-ink-2">{L.allNote(rows.length, script.count)}</li>
+        )}
+      </ol>
+    </div>
   );
 }
 

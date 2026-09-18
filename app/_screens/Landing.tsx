@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { QUICK_SEARCHES } from "../_lib/scripts";
 import type { Go } from "../_lib/types";
 import { StatusBar, FillArrow } from "../_components/Chrome";
@@ -50,6 +50,27 @@ export default function Landing({
 }) {
   const [hour, setHour] = useState(19);
   useEffect(() => setHour(new Date().getHours()), []);
+
+  // Market pulse moves on its own so every card gets read. Touching it, or the pause button, hands control back.
+  const pulse = useRef<HTMLDivElement | null>(null);
+  const [auto, setAuto] = useState(true);
+  const held = useRef(0);
+  useEffect(() => {
+    if (!auto) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setAuto(false); return; }
+    const t = window.setInterval(() => {
+      const el = pulse.current;
+      if (!el || Date.now() < held.current || document.hidden) return;
+      const cards = Array.from(el.children) as HTMLElement[];
+      const pad = cards[0]?.offsetLeft ?? 0;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+      const next = cards.find((c) => c.offsetLeft - pad > el.scrollLeft + 4);
+      el.scrollTo({ left: atEnd || !next ? 0 : next.offsetLeft - pad, behavior: "smooth" });
+    }, 3000);
+    return () => window.clearInterval(t);
+  }, [auto]);
+  // A touch, hover or keyboard focus holds the carousel still for a while
+  const hold = () => { held.current = Date.now() + 6000; };
 
   return (
     <div className="absolute inset-0 flex flex-col">
@@ -172,8 +193,16 @@ export default function Landing({
 
         {/* Market pulse — compact cards in a carousel, about half the old height */}
         <section className="rise pt-7" style={d(180)}>
-          <Label className="px-5">Market pulse</Label>
-          <div className="no-scrollbar mt-3 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-1">
+          <div className="flex h-6 items-center justify-between px-5">
+            <Label>Market pulse</Label>
+            {/* Anything that moves by itself needs an off switch */}
+            <button type="button" onClick={() => setAuto((v) => !v)} aria-pressed={!auto} aria-label={auto ? "Pause Market pulse" : "Play Market pulse"} className="-me-2 grid h-8 w-8 place-items-center rounded-full text-muted transition-colors hover:bg-accent-tint hover:text-accent">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                {auto ? (<><rect x="5" y="4" width="5" height="16" rx="1.5" /><rect x="14" y="4" width="5" height="16" rx="1.5" /></>) : <polygon points="6 4 20 12 6 20" />}
+              </svg>
+            </button>
+          </div>
+          <div ref={pulse} onPointerDown={hold} onPointerMove={hold} onWheel={hold} onFocusCapture={hold} className="no-scrollbar mt-3 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-1">
             {INSIGHTS.map((m) => (
               <button
                 key={m.title}

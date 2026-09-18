@@ -88,8 +88,17 @@ export default function Voice({
           <Sphere mode={!listening ? "settled" : paused ? "paused" : "listening"} />
           <span className={`absolute grid h-14 w-14 place-items-center rounded-full bg-bg-elev text-accent shadow-[var(--shadow-3)] transition-transform duration-300 ${listening ? "" : "scale-110"}`}>
             {listening ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <rect x="9" y="2" width="6" height="12" rx="3" fill="currentColor" stroke="none" /><path d="M5 10a7 7 0 0 0 14 0" /><line x1="12" y1="17" x2="12" y2="21" />
+              // Scout is listening: the brand gradient drifts across the mic while its opacity breathes
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#mic-grad)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className={paused ? "mic-held" : "mic-live"} aria-hidden>
+                <defs>
+                  <linearGradient id="mic-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stopColor="#7363BA" />
+                    <stop offset="0.5" stopColor="#B34C65" />
+                    <stop offset="1" stopColor="#D2412B" />
+                    {!paused && <animateTransform attributeName="gradientTransform" type="rotate" from="0 12 12" to="360 12 12" dur="3.2s" repeatCount="indefinite" />}
+                  </linearGradient>
+                </defs>
+                <rect x="9" y="2" width="6" height="12" rx="3" fill="url(#mic-grad)" stroke="none" /><path d="M5 10a7 7 0 0 0 14 0" /><line x1="12" y1="17" x2="12" y2="21" />
               </svg>
             ) : (
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="rise" aria-hidden>

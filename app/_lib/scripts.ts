@@ -4,12 +4,13 @@
  * stated it or Scout inferred it, and from which words.
  */
 
-import { STR, langOf, type Lang } from "./i18n";
+import { STR, chipLabel, langOf, type Lang } from "./i18n";
+import { EMAAR_OPEN, EMAAR_READY, EMAAR_SOLD, VILLAS, marinaThreeBed, marinaTwoBed } from "./homes";
 
 export type Seg =
   | { t: string }
   | { t: string; kind: "stated" }
-  | { t: string; kind: "inferred"; from: string; why: string; without: number }
+  | { t: string; kind: "inferred"; from: string; why: string; without: number; /** What dropping the assumption lets back in */ adds?: Listing[] }
   | { t: string; kind: "cite" };
 
 export type Inferred = Extract<Seg, { kind: "inferred" }>;
@@ -34,7 +35,8 @@ export type Listing = {
 export type Stat = { label: string; value: string; tone?: "positive" | "negative" };
 /** A question Scout asks back. Each option either digs into a listing or runs a refinement. */
 export type AskBack = { q: string; options: { label: string; sub: string; dig?: number; refine?: Refine }[] };
-export type Refine = { label: string; delta: number };
+/** `adds` brings listings in; `keep` names the ones that survive a narrowing. Without either, the list is only re-ranked. */
+export type Refine = { label: string; delta: number; adds?: Listing[]; keep?: number[] };
 
 export type Script = {
   id: string;
@@ -44,8 +46,10 @@ export type Script = {
   alt?: Script;
   count: number;
   noun: string;
-  /** Arabic counts 3-10 take the plural (٤ شقق); 11 and up take the singular (٢٣ شقة). */
+  /** Arabic counts 3-10 take the plural (٤ شقق); 11 and up take the singular (٢٣ شقة). Russian 2-4 take this form (64 квартиры). */
   nounFew?: string;
+  /** Russian counts ending in 1, except 11 (21 квартира). `noun` itself is the many form (97 квартир). */
+  nounOne?: string;
   segs: Seg[];
   listings: Listing[];
   refine: Refine[];
@@ -55,11 +59,16 @@ export type Script = {
   ask?: AskBack;
 };
 
-/** The right noun form for a count. Only Arabic changes form here. */
-export function nounFor(s: Pick<Script, "lang" | "noun" | "nounFew">, n: number): string {
-  if (s.lang !== "ar" || !s.nounFew) return s.noun;
+/** The right noun form for a count. Arabic and Russian change form; the others do not. */
+export function nounFor(s: Pick<Script, "lang" | "noun" | "nounFew" | "nounOne">, n: number): string {
   const m = n % 100;
-  return m >= 3 && m <= 10 ? s.nounFew : s.noun;
+  if (s.lang === "ar" && s.nounFew) return m >= 3 && m <= 10 ? s.nounFew : s.noun;
+  if (s.lang === "ru") {
+    const d = n % 10;
+    if (d === 1 && m !== 11 && s.nounOne) return s.nounOne;
+    if (d >= 2 && d <= 4 && !(m >= 12 && m <= 14) && s.nounFew) return s.nounFew;
+  }
+  return s.noun;
 }
 
 const cite = (n: number): Seg => ({ t: String(n), kind: "cite" });
@@ -82,38 +91,23 @@ const LAUNCH: Script = {
     {
       t: "still under construction", kind: "inferred", from: "new … launches",
       why: "Scout read “new launches” as not yet built, so two ready projects were left out. You didn’t say off-plan only.",
-      without: 7,
+      without: 7, adds: EMAAR_READY,
     },
     { t: " and " },
     {
       t: "still open for sale", kind: "inferred", from: "new … launches",
       why: "Golf Acres, Golf Edge and Grove Ridge are sold out, so Scout hid them. You might still want them for resale.",
-      without: 8,
+      without: 8, adds: EMAAR_SOLD,
     },
     { t: ". All take 10% down, with handover from Q3 2029. Three worth a look " },
     cite(1), cite(2), cite(3),
     { t: "." },
   ],
-  listings: [
-    {
-      name: "Golf Trails · Emaar South", meta: "1–3 BR · Q4 2030", price: "From AED 1.06M", img: "/listings/golf-views.jpg",
-      status: "Under construction", terms: "Emaar Properties · 10% down",
-      detail: " is under construction by Emaar Properties in Emaar South, completing Q4 2030. It has 1 to 3 bedroom homes with 10% down, and the launch price starts at AED 1,060,000",
-    },
-    {
-      name: "Golf Vale · Emaar South", meta: "1–3 BR · 672–2,796 sqft · Q2 2030", price: "From AED 1.10M", img: "/listings/greenway.jpg",
-      status: "Under construction", terms: "Emaar Properties · 10% down",
-      detail: " is under construction by Emaar Properties in Emaar South, completing Q2 2030. Homes run from 672 to 2,796 sqft across 1 to 3 bedrooms with 10% down, and the launch price starts at AED 1,099,888",
-    },
-    {
-      name: "Vista Ridge · Emaar South", meta: "1–3 BR · 788–1,752 sqft · Q3 2029", price: "From AED 1.30M", img: "/listings/golf-lane.jpg",
-      status: "Under construction", terms: "Emaar Properties · 10% down",
-      detail: " is under construction by Emaar Properties in Emaar South, completing Q3 2029, the earliest of the five. Homes run from 788 to 1,752 sqft across 1 to 3 bedrooms with 10% down, and the launch price starts at AED 1,297,888",
-    },
-  ],
+  listings: EMAAR_OPEN,
   refine: [
-    { label: "Include ready projects too", delta: 2 },
-    { label: "Handover by 2029 only", delta: -2 },
+    { label: "Include ready projects too", delta: 2, adds: EMAAR_READY },
+    // Vista Ridge and Golf Hills both complete in Q3 2029
+    { label: "Handover by 2029 only", delta: -3, keep: [2, 3] },
   ],
   market: {
     note: "Dubai South · Property Finder data",
@@ -129,6 +123,8 @@ const LAUNCH: Script = {
       { label: "Golf Trails", sub: "From AED 1.06M · 1–3 BR · Q4 2030", dig: 0 },
       { label: "Golf Vale", sub: "From AED 1.10M · 1–3 BR · Q2 2030", dig: 1 },
       { label: "Vista Ridge", sub: "From AED 1.30M · 1–3 BR · Q3 2029", dig: 2 },
+      { label: "Golf Hills", sub: "From AED 1.06M · 1–3 BR · Q3 2029", dig: 3 },
+      { label: "Golf Fields", sub: "From AED 1.26M · 1–3 BR · Q1 2030", dig: 4 },
       { label: "Show all details & compare", sub: "Payment plans, handover dates, unit mix", refine: { label: "Compare payment plans", delta: 0 } },
     ],
   },
@@ -161,11 +157,7 @@ const READY: Script = {
     cite(1), cite(2), cite(3),
     { t: "." },
   ],
-  listings: [
-    { name: "The Zen Tower", meta: "2 BR · 1,474 sqft · Ready", price: "AED 1.7M", img: "/listings/zen-tower.jpg" },
-    { name: "Marina Crown", meta: "2 BR · 1,494 sqft · Ready", price: "AED 1.9M", img: "/listings/marina-crown.jpg" },
-    { name: "Marina Diamond 2", meta: "2 BR · 1,355 sqft · Ready", price: "AED 1.6M", img: "/listings/marina-diamond.jpg" },
-  ],
+  listings: marinaTwoBed("en"),
   refine: [
     { label: "Widen budget to 2.2M", delta: 38 },
     { label: "Add sea view", delta: -112 },
@@ -198,11 +190,7 @@ const VILLA: Script = {
     cite(1), cite(2), cite(3),
     { t: "." },
   ],
-  listings: [
-    { name: "Joy · Arabian Ranches III", meta: "3 BR · 2,100 sqft · Ready", price: "AED 3.2M", img: "/listings/joy-ranches.jpg" },
-    { name: "Maple · Dubai Hills", meta: "3 BR · 2,240 sqft · Ready", price: "AED 3.6M", img: "/listings/maple-hills.jpg" },
-    { name: "Mira Oasis", meta: "3 BR · 2,020 sqft · Ready", price: "AED 2.9M", img: "/listings/mira-oasis.jpg" },
-  ],
+  listings: VILLAS,
   refine: [
     { label: "Only gated communities", delta: -22 },
     { label: "Closer to Downtown", delta: -41 },
@@ -214,11 +202,7 @@ const VILLA: Script = {
 // What the user said earlier stays "stated" in every later language, and the
 // provenance card quotes their words in the script they were written in.
 
-const SEA_LISTINGS_EN: Listing[] = [
-  { name: "The Zen Tower", meta: "2 BR · 1,474 sqft · Ready", price: "AED 1.7M", img: "/listings/zen-tower.jpg" },
-  { name: "Marina Crown", meta: "2 BR · 1,494 sqft · Ready", price: "AED 1.9M", img: "/listings/marina-crown.jpg" },
-  { name: "Marina Diamond 2", meta: "2 BR · 1,355 sqft · Ready", price: "AED 1.6M", img: "/listings/marina-diamond.jpg" },
-];
+const SEA_LISTINGS_EN: Listing[] = marinaTwoBed("en");
 
 const SEA_EN: Script = {
   id: "sea-en", lang: "en", count: 64, noun: "apartments",
@@ -246,11 +230,7 @@ const SEA_ZH: Script = {
     { t: "高楼层", kind: "inferred", from: "海景", why: "Scout 认为“海景”意味着高楼层。你并没有提到楼层。", without: 97 },
     { t: "的房源。先看这三套 " }, cite(1), cite(2), cite(3), { t: "。" },
   ],
-  listings: [
-    { name: "The Zen Tower", local: "禅意大厦", meta: "2 室 · 1,474 平方英尺 · 现房", price: "170 万迪拉姆", img: "/listings/zen-tower.jpg" },
-    { name: "Marina Crown", local: "码头皇冠大厦", meta: "2 室 · 1,494 平方英尺 · 现房", price: "190 万迪拉姆", img: "/listings/marina-crown.jpg" },
-    { name: "Marina Diamond 2", local: "码头钻石 2 号", meta: "2 室 · 1,355 平方英尺 · 现房", price: "160 万迪拉姆", img: "/listings/marina-diamond.jpg" },
-  ],
+  listings: marinaTwoBed("zh"),
   refine: [{ label: "预算放宽到 220 万", delta: 21 }, { label: "只看带家具的", delta: -30 }, { label: "避开低楼层", delta: -12 }],
 };
 SEA_ZH.alt = SEA_EN;
@@ -267,11 +247,7 @@ const THREE_EN: Script = {
     { t: "I raised the budget to 2.8M", kind: "inferred", from: "ثلاث غرف", why: "Earlier you said “under 2M”. Scout raised the budget on its own to find three-bedrooms. You didn’t ask for that.", without: 4 },
     { t: ", because three-bedrooms are rare under 2M. Three of them " }, cite(1), cite(2), cite(3), { t: "." },
   ],
-  listings: [
-    { name: "Marina Gate 1", meta: "3 BR · 1,890 sqft · Ready", price: "AED 2.7M", img: "/listings/marina-crown.jpg" },
-    { name: "Damac Heights", meta: "3 BR · 1,760 sqft · Ready", price: "AED 2.6M", img: "/listings/zen-tower.jpg" },
-    { name: "Marina Promenade", meta: "3 BR · 1,820 sqft · Ready", price: "AED 2.8M", img: "/listings/marina-diamond.jpg" },
-  ],
+  listings: marinaThreeBed("en"),
   refine: [{ label: "Go back to under 2M", delta: -19 }, { label: "Two parking spaces", delta: -9 }, { label: "High floor only", delta: -11 }],
 };
 
@@ -286,15 +262,73 @@ const THREE_AR: Script = {
     { t: "رفعتُ الميزانية إلى 2.8 مليون", kind: "inferred", from: "ثلاث غرف", why: "قلتَ سابقاً «under 2M». رفع سكاوت الميزانية من تلقاء نفسه ليجد شققاً بثلاث غرف. أنت لم تطلب ذلك.", without: 4 },
     { t: " لأن الشقق ذات الثلاث غرف نادرة بأقل من 2 مليون. إليك ثلاثاً منها " }, cite(1), cite(2), cite(3), { t: "." },
   ],
-  listings: [
-    { name: "Marina Gate 1", local: "مارينا جيت 1", meta: "3 غرف · 1,890 قدم² · جاهزة", price: "2.7 مليون درهم", img: "/listings/marina-crown.jpg" },
-    { name: "Damac Heights", local: "داماك هايتس", meta: "3 غرف · 1,760 قدم² · جاهزة", price: "2.6 مليون درهم", img: "/listings/zen-tower.jpg" },
-    { name: "Marina Promenade", local: "مارينا بروميناد", meta: "3 غرف · 1,820 قدم² · جاهزة", price: "2.8 مليون درهم", img: "/listings/marina-diamond.jpg" },
-  ],
+  listings: marinaThreeBed("ar"),
   refine: [{ label: "العودة إلى أقل من 2 مليون", delta: -19 }, { label: "موقفان للسيارات", delta: -9 }, { label: "طابق مرتفع فقط", delta: -11 }],
 };
 THREE_AR.alt = THREE_EN;
 THREE_EN.alt = THREE_AR;
+
+
+// ── Japanese, Russian, Hindi ───────────────────────────────────────────────
+// The same sea-view follow-up, written natively. Each one pairs with its own
+// English twin, so "Reply in English instead" quotes the user's words in their script.
+
+const seaEnFor = (id: string, from: string, gloss: string): Script => ({
+  ...SEA_EN, id, alt: undefined,
+  segs: SEA_EN.segs.map((seg) =>
+    isInferred(seg) ? { ...seg, from, why: `Scout took “${from}” (${gloss}) to mean high floors. You didn’t mention floors.` } : seg),
+});
+
+const SEA_JA: Script = {
+  id: "sea-ja", lang: "ja", count: 64, noun: "アパートメント",
+  thinking: ["質問を読んでいます", "Property Finder を検索しています", "64件のアパートメントを絞り込んでいます"],
+  segs: [
+    { t: "承知しました。条件に" }, { t: "海の眺望", kind: "stated" },
+    { t: "を加えました。" }, { t: "ドバイ・マリーナ", kind: "stated" },
+    { t: "で、" }, { t: "200万以下", kind: "stated" }, { t: "、" }, { t: "年内入居可", kind: "stated" },
+    { t: "の海が見えるアパートメントは64件あります。ご希望は" },
+    { t: "高層階", kind: "inferred", from: "海が見える", why: "Scout は「海が見える」を高層階という意味に受け取りました。階数については何もおっしゃっていません。", without: 97 },
+    { t: "だと考えて優先しました。まずはこの3件をご覧ください " }, cite(1), cite(2), cite(3), { t: "。" },
+  ],
+  listings: marinaTwoBed("ja"),
+  refine: [{ label: "予算を220万まで広げる", delta: 21 }, { label: "家具付きのみ", delta: -30 }, { label: "低層階を除く", delta: -12 }],
+};
+const SEA_EN_JA = seaEnFor("sea-en-ja", "海が見える", "sea view");
+SEA_JA.alt = SEA_EN_JA; SEA_EN_JA.alt = SEA_JA;
+
+const SEA_RU: Script = {
+  id: "sea-ru", lang: "ru", count: 64, noun: "квартир", nounFew: "квартиры", nounOne: "квартира",
+  thinking: ["Читаю ваш вопрос", "Ищу на Property Finder", "Отбираю 64 квартиры"],
+  segs: [
+    { t: "Готово, добавил " }, { t: "вид на море", kind: "stated" },
+    { t: ". В районе " }, { t: "Дубай Марина", kind: "stated" },
+    { t: " есть 64 квартиры с видом на море: " }, { t: "до 2 млн", kind: "stated" }, { t: " и " }, { t: "готовые в этом году", kind: "stated" },
+    { t: ". Я решил, что вам нужны " },
+    { t: "высокие этажи", kind: "inferred", from: "с видом на море", why: "Scout решил, что «вид на море» означает высокие этажи. Про этажи вы ничего не говорили.", without: 97 },
+    { t: ", и поставил их выше. Для начала три варианта " }, cite(1), cite(2), cite(3), { t: "." },
+  ],
+  listings: marinaTwoBed("ru"),
+  refine: [{ label: "Расширить бюджет до 2,2 млн", delta: 21 }, { label: "Только с мебелью", delta: -30 }, { label: "Без нижних этажей", delta: -12 }],
+};
+const SEA_EN_RU = seaEnFor("sea-en-ru", "с видом на море", "sea view");
+SEA_RU.alt = SEA_EN_RU; SEA_EN_RU.alt = SEA_RU;
+
+const SEA_HI: Script = {
+  id: "sea-hi", lang: "hi", count: 64, noun: "अपार्टमेंट",
+  thinking: ["आपका सवाल पढ़ रहा हूँ", "Property Finder पर खोज रहा हूँ", "64 अपार्टमेंट छाँट रहा हूँ"],
+  segs: [
+    { t: "ठीक है, " }, { t: "समुद्र का नज़ारा", kind: "stated" },
+    { t: " जोड़ दिया। " }, { t: "दुबई मरीना", kind: "stated" },
+    { t: " में " }, { t: "20 लाख से कम", kind: "stated" }, { t: " और " }, { t: "इसी साल तैयार", kind: "stated" },
+    { t: " वाले, समुद्र के नज़ारे वाले 64 अपार्टमेंट हैं। मैंने माना कि आपको " },
+    { t: "ऊँची मंज़िलें", kind: "inferred", from: "समुद्र का नज़ारा", why: "Scout ने “समुद्र का नज़ारा” का मतलब ऊँची मंज़िलें समझा। आपने मंज़िल के बारे में कुछ नहीं कहा था।", without: 97 },
+    { t: " चाहिए, इसलिए उन्हें ऊपर रखा। शुरुआत के लिए ये तीन देखिए " }, cite(1), cite(2), cite(3), { t: "।" },
+  ],
+  listings: marinaTwoBed("hi"),
+  refine: [{ label: "बजट 22 लाख तक बढ़ाएँ", delta: 21 }, { label: "सिर्फ़ फ़र्निश्ड", delta: -30 }, { label: "निचली मंज़िलें हटाएँ", delta: -12 }],
+};
+const SEA_EN_HI = seaEnFor("sea-en-hi", "समुद्र का नज़ारा", "sea view");
+SEA_HI.alt = SEA_EN_HI; SEA_EN_HI.alt = SEA_HI;
 
 /** The three questions of the demo thread, in the order a person might ask them. */
 export const MULTI_THREAD = [
@@ -311,34 +345,36 @@ const quickScript = (id: string, count: number, segs: Seg[], listings: Listing[]
   segs: [...segs, { t: " Three to start with " }, cite(1), cite(2), cite(3), { t: "." }],
   listings, refine,
 });
-const HOMES_2027: Listing[] = READY.listings.map((l) => ({ ...l, meta: l.meta.replace("Ready", "Handover 2027") }));
+const HOMES_2027: Listing[] = marinaTwoBed("en", "Handover 2027");
+// Broader than one developer, so these lead with the open projects and then the ready ones
+const LAUNCH_POOL: Listing[] = [...EMAAR_OPEN, ...EMAAR_READY];
 
 const QUICK: Record<string, Script> = {
   "new launches this month": quickScript("q-month", 17, [
     { t: "I found 17 projects launched " }, { t: "this month", kind: "stated" }, { t: ". I kept to " },
     { t: "Dubai", kind: "inferred", from: "no area given", why: "You didn’t name a place, so Scout stayed in Dubai, where most of this month’s launches are.", without: 22 },
     { t: ". Launches are down on last month." },
-  ], LAUNCH.listings, [{ label: "Under 2M only", delta: -8 }, { label: "Compare payment plans", delta: 0 }]),
+  ], LAUNCH_POOL, [{ label: "Under 2M only", delta: -8 }, { label: "Compare payment plans", delta: 0 }]),
   "under 20% down payment": quickScript("q-down", 64, [
     { t: "I found 64 projects with a down payment " }, { t: "under 20%", kind: "stated" }, { t: ". I read that as " },
     { t: "off-plan only", kind: "inferred", from: "down payment", why: "Down-payment plans mostly belong to off-plan, so Scout left out ready homes. You didn’t rule them out.", without: 91 },
     { t: ". The market average is 13% right now." },
-  ], LAUNCH.listings, [{ label: "10% down or less", delta: -31 }, { label: "Compare payment plans", delta: 0 }]),
+  ], LAUNCH_POOL, [{ label: "10% down or less", delta: -31 }, { label: "Compare payment plans", delta: 0 }]),
   "post-handover plans": quickScript("q-post", 38, [
     { t: "I found 38 projects with " }, { t: "post-handover plans", kind: "stated" }, { t: ". I ranked them by " },
     { t: "the longest plan first", kind: "inferred", from: "post-handover plans", why: "You didn’t say what matters most, so Scout ranked by how long you can keep paying after handover.", without: 38 },
     { t: "." },
-  ], LAUNCH.listings, [{ label: "Under 2M only", delta: -17 }, { label: "Compare payment plans", delta: 0 }]),
+  ], LAUNCH_POOL, [{ label: "Under 2M only", delta: -17 }, { label: "Compare payment plans", delta: 0 }]),
   "highest appreciation potential": quickScript("q-appr", 12, [
     { t: "I ranked 12 projects for " }, { t: "appreciation potential", kind: "stated" }, { t: ". I measured it over " },
     { t: "the last 12 months", kind: "inferred", from: "appreciation potential", why: "“Potential” has no time frame, so Scout used price growth per sqft over the last year.", without: 12 },
     { t: ". Dubai South leads, up 8.5% per sqft." },
-  ], LAUNCH.listings, [{ label: "Under 2M only", delta: -5 }, { label: "Compare payment plans", delta: 0 }]),
+  ], LAUNCH_POOL, [{ label: "Under 2M only", delta: -5 }, { label: "Compare payment plans", delta: 0 }]),
   "emaar & damac launches": quickScript("q-devs", 27, [
     { t: "I found 27 projects by " }, { t: "Emaar", kind: "stated" }, { t: " and " }, { t: "DAMAC", kind: "stated" }, { t: ". I kept the ones " },
     { t: "launched this year", kind: "inferred", from: "launches", why: "Scout read “launches” as recent, so older projects still selling were left out.", without: 58 },
     { t: "." },
-  ], LAUNCH.listings, [{ label: "Under 2M only", delta: -11 }, { label: "Compare payment plans", delta: 0 }]),
+  ], LAUNCH_POOL, [{ label: "Under 2M only", delta: -11 }, { label: "Compare payment plans", delta: 0 }]),
   "ready in 2027 under 2m": quickScript("q-2027", 41, [
     { t: "I found 41 homes handing over in " }, { t: "2027", kind: "stated" }, { t: " and priced " }, { t: "under 2M", kind: "stated" }, { t: ". I started with " },
     { t: "apartments", kind: "inferred", from: "under 2M", why: "Most homes under 2M are apartments, so Scout started there. You didn’t say which type.", without: 49 },
@@ -356,6 +392,9 @@ export function pickScript(q: string): Script {
   const lang = langOf(q);
   if (lang === "zh") return SEA_ZH;
   if (lang === "ar") return THREE_AR;
+  if (lang === "ja") return SEA_JA;
+  if (lang === "ru") return SEA_RU;
+  if (lang === "hi") return SEA_HI;
   const s = q.toLowerCase();
   const quick = QUICK[s.trim()];
   if (quick) return quick;
@@ -376,14 +415,22 @@ export function pickScript(q: string): Script {
   return LAUNCH;
 }
 
-const DONE: Record<Lang, string> = { en: "Done — ", zh: "好的——", ar: "تم — " };
-const STOPPED: Record<Lang, string> = { en: "Done. I’ve stopped assuming ", zh: "好的，我不再假设", ar: "تم. لن أفترض " };
-const lowerFirst = (t: string, lang: Lang) => (lang === "en" ? t.charAt(0).toLowerCase() + t.slice(1) : t);
+const DONE: Record<Lang, string> = { en: "Done — ", zh: "好的——", ar: "تم — ", ja: "了解です——", ru: "Готово — ", hi: "हो गया — " };
+const STOPPED: Record<Lang, string> = {
+  en: "Done. I’ve stopped assuming ", zh: "好的，我不再假设", ar: "تم. لن أفترض ",
+  ja: "了解です。次の推測をやめました：", ru: "Готово. Больше не предполагаю ", hi: "ठीक है। अब मैं यह नहीं मानूँगा: ",
+};
+/** Sentence-final mark per script */
+const END: Record<Lang, string> = { en: ".", zh: "。", ar: ".", ja: "。", ru: ".", hi: "।" };
+// Only the cased scripts need this: a label continues a sentence in English and Russian
+const lowerFirst = (t: string, lang: Lang) => (lang === "en" || lang === "ru" ? t.charAt(0).toLowerCase() + t.slice(1) : t);
+
+const rotate = <T,>(list: T[], by: number): T[] => [...list.slice(by), ...list.slice(0, by)];
 
 /** A refinement re-answers in place, in the language of the turn it refines. */
 export function refineScript(base: Script, r: Refine): Script {
   const L = STR[base.lang];
-  const next = Math.max(3, base.count + r.delta);
+  const next = Math.max(1, base.count + r.delta);
   const tail = r.delta === 0
     ? L.resorted(r.label, base.count, nounFor(base, base.count))
     : L.refined(r.label, base.count, next, nounFor(base, next));
@@ -397,9 +444,10 @@ export function refineScript(base: Script, r: Refine): Script {
       { t: lowerFirst(r.label, base.lang), kind: "stated" },
       { t: tail },
       cite(1), cite(2), cite(3),
-      { t: base.lang === "zh" ? "。" : "." },
+      { t: END[base.lang] },
     ],
-    listings: [base.listings[1], base.listings[2], base.listings[0]],
+    // A narrowing keeps the survivors, a widening lets the new ones in, anything else only re-ranks
+    listings: r.keep ? r.keep.map((i) => base.listings[i]) : r.adds ? [...base.listings, ...r.adds] : rotate(base.listings, 1),
     refine: base.refine.filter((x) => x.label !== r.label),
   };
 }
@@ -425,9 +473,9 @@ export function unsayScript(base: Script, segIndex: number): { q: string; script
         { t: L.quote(seg.t) },
         { t: L.unsaid(seg.t, seg.without, nounFor(base, seg.without), change) },
         cite(1), cite(2), cite(3),
-        { t: base.lang === "zh" ? "。" : "." },
+        { t: END[base.lang] },
       ],
-      listings: [base.listings[2], base.listings[0], base.listings[1]],
+      listings: seg.adds ? [...base.listings, ...seg.adds] : rotate(base.listings, 2),
     },
   };
 }
@@ -451,7 +499,7 @@ export function digScript(base: Script, index: number): { q: string; script: Scr
         { t: ". Ask me about payment plans, unit mix or the area " }, cite(1), { t: "." },
       ]
     // The card shows only the translated name, so the name on the building and the contract is given once here
-    : [{ t: name, kind: "stated" }, ...(l.local ? [{ t: ` (${l.name})` }] : []), { t: L.digBody(l.meta, l.price) }, cite(1), { t: base.lang === "zh" ? "。" : "." }];
+    : [{ t: name, kind: "stated" }, ...(l.local ? [{ t: ` (${l.name})` }] : []), { t: L.digBody(l.meta, l.price) }, cite(1), { t: END[base.lang] }];
   return {
     q: L.digTitle(name),
     script: {
@@ -471,11 +519,12 @@ export const SUGGESTIONS = [
 ];
 
 /** Offered in the follow-up sheet, so the language switch is one tap away in a demo. */
-export const FOLLOW_UPS = ["要有海景的", "وماذا عن شقق بثلاث غرف؟", "Compare Marina vs JBR for a 2BR"];
+export const FOLLOW_UPS = [
+  "要有海景的", "وماذا عن شقق بثلاث غرف؟", "海が見える物件にして", "А что есть с видом на море?", "समुद्र के नज़ारे वाले दिखाइए",
+  "Compare Marina vs JBR for a 2BR",
+];
 
+/** The chip code for whatever script the text is written in. */
 export function detectLang(text: string): string {
-  if (/[؀-ۿ]/.test(text)) return "AR";
-  if (/[一-鿿]/.test(text)) return "中文";
-  if (/[ऀ-ॿ]/.test(text)) return "हि";
-  return "EN";
+  return chipLabel[langOf(text)];
 }

@@ -151,7 +151,7 @@
   --color-negative: var(--negative);
   --color-warning: var(--warning);
   --color-brand-mark: var(--brand-mark);
-  --font-sans: var(--font-inter), var(--font-arabic), var(--font-sc);
+  --font-sans: var(--font-inter), var(--font-arabic), var(--font-jp), var(--font-sc), var(--font-deva);
   --radius-r-sm: 6px;
   --radius-r: 8px;
   --radius-r-lg: 12px;
@@ -165,7 +165,7 @@ html { -webkit-text-size-adjust: 100%; }
 html, body {
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-inter), var(--font-arabic), var(--font-sc), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-arabic), var(--font-jp), var(--font-sc), var(--font-deva), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overscroll-behavior: none;
@@ -374,3 +374,21 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 }
 :root[data-theme="dark"] .logo-light { display: none; }
 :root[data-theme="dark"] .logo-dark { display: block; }
+
+/* Japanese text must reach its own face before the Chinese one: they share code points but not glyph shapes */
+[lang="ja"], [lang="ja"] * { font-family: var(--font-inter), var(--font-jp), system-ui, sans-serif; }
+[lang="zh"], [lang="zh"] * { font-family: var(--font-inter), var(--font-sc), system-ui, sans-serif; }
+
+/* A hint too long for the composer slides to its end instead of being cut */
+@keyframes ticker { 0%, 18% { transform: translateX(0); } 82%, 100% { transform: translateX(var(--shift)); } }
+.ticker-once { animation: ticker 2200ms ease-in-out 500ms both; }
+.ticker-loop { animation: ticker 4200ms ease-in-out 900ms infinite alternate both; }
+
+/* The mic breathes while Scout is listening: gradient for Scout's presence, opacity for the recording */
+@keyframes mic-breathe { 0%, 100% { opacity: 0.4; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.04); } }
+.mic-live { animation: mic-breathe 1500ms ease-in-out infinite; transform-origin: center; }
+.mic-held { opacity: 0.45; }
+@media (prefers-reduced-motion: reduce) {
+  .mic-live { animation: none; opacity: 1; }
+  .ticker-once, .ticker-loop { animation: none; }
+}
