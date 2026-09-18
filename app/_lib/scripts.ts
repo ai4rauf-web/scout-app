@@ -320,7 +320,9 @@ export function unsayScript(base: Script, segIndex: number): { q: string; script
   if (!isInferred(seg)) return null;
   const L = STR[base.lang];
   const diff = seg.without - base.count;
-  const change = diff === 0 ? L.same : `${diff > 0 ? "+" : "−"}${Math.abs(diff)}`;
+  // LRI…PDI keeps a signed number left-to-right inside Arabic, where it would otherwise read "19−"
+  const signed = `${diff > 0 ? "+" : "−"}${Math.abs(diff)}`;
+  const change = diff === 0 ? L.same : base.lang === "ar" ? `\u2066${signed}\u2069` : signed;
   return {
     q: L.dropTitle(seg.t),
     script: {

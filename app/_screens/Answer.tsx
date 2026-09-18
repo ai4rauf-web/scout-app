@@ -369,7 +369,8 @@ function ProvCard({
 
         <p className="mt-3 rounded-[10px] bg-accent-tint px-3 py-2 text-[12px] font-medium text-accent">
           {L.without} <span className="tabular-nums">{seg.without}</span> {noun}
-          <span className="tabular-nums opacity-80"> · {diff >= 0 ? "+" : "−"}{Math.abs(diff)}</span>
+          {/* Isolated left-to-right, or Arabic puts the sign on the wrong side of the number (19−) */}
+          <span className="tabular-nums opacity-80"> · <bdi dir="ltr">{diff >= 0 ? "+" : "−"}{Math.abs(diff)}</bdi></span>
         </p>
       </div>
     </div>
