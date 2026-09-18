@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import type { Go } from "../_lib/types";
-import { StatusBar, FillArrow, Chevron } from "../_components/Chrome";
+import { StatusBar, FillArrow } from "../_components/Chrome";
 import ComposerBar from "../_components/ComposerBar";
 import ThemeToggle from "../_components/ThemeToggle";
 import ListingPhoto from "../_components/ListingPhoto";
@@ -21,6 +21,17 @@ const FEATURED = [
   { name: "Greenway · Emaar South", meta: "3 BR · 1,810 sqft", price: "AED 2.4M", sponsored: false, img: "/listings/greenway.jpg" },
 ];
 
+type Tone = "positive" | "negative" | "neutral";
+const TONE: Record<Tone, string> = { positive: "text-positive", negative: "text-negative", neutral: "text-accent" };
+
+const INSIGHTS: { title: string; line: string; value: string; tone: Tone; glyph: GlyphKind; q: string }[] = [
+  { title: "Dubai Marina", line: "Avg price / sqft", value: "−2.1%", tone: "negative", glyph: "down", q: "Why did Dubai Marina prices drop this month?" },
+  { title: "Dubai South", line: "New launches", value: "+29", tone: "positive", glyph: "up", q: "Show me the new launches in Dubai South" },
+  { title: "Down payments", line: "Market average", value: "13%", tone: "neutral", glyph: "percent", q: "Which new launches need the lowest down payment?" },
+  { title: "Off-plan", line: "Share of all sales", value: "72%", tone: "neutral", glyph: "share", q: "Is off-plan a good idea right now?" },
+  { title: "Business Bay", line: "Rental yield", value: "6.4%", tone: "positive", glyph: "yield", q: "What is the rental yield in Business Bay?" },
+];
+
 const PROMPTS = [
   "Apartments under 2M, ready this year",
   "Best communities for a family villa",
@@ -30,12 +41,14 @@ const PROMPTS = [
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
 export default function Landing({
-  go, ask, resume, openText,
+  go, ask, resume, openText, showContinue, onDismissContinue,
 }: {
   go: Go;
   ask: (q: string) => void;
   resume: (q: string) => void;
   openText: (draft: string) => void;
+  showContinue: boolean;
+  onDismissContinue: () => void;
 }) {
   const [hour, setHour] = useState(19);
   useEffect(() => setHour(new Date().getHours()), []);
@@ -81,29 +94,49 @@ export default function Landing({
           </p>
         </section>
 
-        {/* Continue */}
-        <section className="rise px-5 pt-5" style={d(60)}>
-          <button
-            type="button"
-            onClick={() => resume("3BR villa in JLT under 5M")}
-            className="group flex w-full items-center gap-3 rounded-[14px] border border-border bg-bg-elev py-3 pl-3 pr-3 text-left shadow-[var(--shadow-1)] transition-shadow hover:shadow-[var(--shadow-2)] active:scale-[0.99]"
-          >
-            <span className="h-9 w-[3px] shrink-0 rounded-full bg-accent" aria-hidden />
-            <span className="min-w-0 flex-1">
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">
-                Continue · Yesterday
-              </span>
-              <span className="mt-0.5 block truncate text-[14px] font-medium text-ink">
-                3BR villa in JLT under 5M
-              </span>
-            </span>
-            <span className="shrink-0 text-accent"><Chevron /></span>
-          </button>
-        </section>
+        {/* Continue — dismissible. Closing it collapses the row so everything below rises. */}
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${showContinue ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+          aria-hidden={!showContinue}
+        >
+          <div className="overflow-hidden">
+            <section className="rise px-5 pt-5" style={d(60)}>
+              <div className="relative flex items-stretch rounded-[14px] border border-border bg-bg-elev shadow-[var(--shadow-1)] transition-shadow hover:shadow-[var(--shadow-2)]">
+                <button
+                  type="button"
+                  tabIndex={showContinue ? 0 : -1}
+                  onClick={() => resume("3BR villa in JLT under 5M")}
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-[14px] py-3 pl-3 pr-10 text-left active:scale-[0.995]"
+                >
+                  <span className="h-9 w-[3px] shrink-0 rounded-full bg-accent" aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">
+                      Continue · Yesterday
+                    </span>
+                    <span className="mt-0.5 block truncate text-[14px] font-medium text-ink">
+                      3BR villa in JLT under 5M
+                    </span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  tabIndex={showContinue ? 0 : -1}
+                  onClick={onDismissContinue}
+                  aria-label="Dismiss this suggestion"
+                  className="absolute right-0 top-0 grid h-10 w-10 place-items-center rounded-full text-muted-2 transition-colors hover:text-ink"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
+                    <line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
 
         {/* Featured listings */}
         <section className="rise pt-7" style={d(120)}>
-          <Label className="px-5">Featured · from Property Finder</Label>
+          <Label className="px-5">Featured properties · suggested for you</Label>
           <div className="no-scrollbar mt-3 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-1">
             {FEATURED.map((f) => (
               <button
@@ -132,26 +165,27 @@ export default function Landing({
           </div>
         </section>
 
-        {/* Market insights */}
-        <section className="rise px-5 pt-7" style={d(180)}>
-          <Label>Market insights</Label>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <Insight
-              title="Dubai Marina"
-              sub="Avg price / sqft"
-              value="−2.1%"
-              tone="negative"
-              chart={<Bars />}
-              onTap={() => ask("Why did Dubai Marina prices drop this month?")}
-            />
-            <Insight
-              title="Dubai South"
-              sub="New launches"
-              value="+29"
-              tone="positive"
-              chart={<Line />}
-              onTap={() => ask("Show me the new launches in Dubai South")}
-            />
+        {/* Market insights — compact cards in a carousel, about half the old height */}
+        <section className="rise pt-7" style={d(180)}>
+          <Label className="px-5">Market insights</Label>
+          <div className="no-scrollbar mt-3 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-1">
+            {INSIGHTS.map((m) => (
+              <button
+                key={m.title}
+                type="button"
+                onClick={() => ask(m.q)}
+                className="flex h-16 w-[248px] shrink-0 snap-start items-center gap-3 rounded-[16px] border border-border bg-bg-elev p-2.5 text-left shadow-[var(--shadow-1)] transition-shadow hover:shadow-[var(--shadow-2)] active:scale-[0.99]"
+              >
+                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-[12px] bg-accent-tint ${TONE[m.tone]}`}>
+                  <Glyph kind={m.glyph} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-semibold text-ink">{m.title}</span>
+                  <span className="block truncate text-[12px] text-muted">{m.line}</span>
+                </span>
+                <span className={`shrink-0 pr-1 text-[15px] font-semibold tabular-nums tracking-[-0.01em] ${TONE[m.tone]}`}>{m.value}</span>
+              </button>
+            ))}
           </div>
         </section>
 
@@ -197,45 +231,14 @@ function Label({ children, className = "" }: { children: React.ReactNode; classN
   );
 }
 
-function Insight({
-  title, sub, value, tone, chart, onTap,
-}: {
-  title: string; sub: string; value: string;
-  tone: "positive" | "negative"; chart: React.ReactNode; onTap: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onTap}
-      className="rounded-[16px] border border-border bg-bg-elev p-3.5 text-left shadow-[var(--shadow-1)] transition-shadow hover:shadow-[var(--shadow-2)] active:scale-[0.99]"
-    >
-      <p className="text-[12px] font-semibold text-ink">{title}</p>
-      <p className="text-[11px] text-muted">{sub}</p>
-      <p className={`mt-2 text-[20px] font-semibold tabular-nums tracking-[-0.01em] ${tone === "negative" ? "text-negative" : "text-positive"}`}>
-        {value}
-      </p>
-      <div className="mt-2 h-9 text-accent">{chart}</div>
-    </button>
-  );
-}
+type GlyphKind = "down" | "up" | "percent" | "share" | "yield";
 
-function Bars() {
-  const h = [14, 22, 18, 30, 24, 34, 26, 20];
-  return (
-    <svg viewBox="0 0 120 36" className="h-full w-full" preserveAspectRatio="none" aria-hidden>
-      {h.map((v, i) => (
-        <rect key={i} x={i * 15 + 2} y={36 - v} width="10" height={v} rx="2.5" fill="currentColor" opacity={i === h.length - 1 ? 1 : 0.35} />
-      ))}
-    </svg>
-  );
-}
-
-function Line() {
-  return (
-    <svg viewBox="0 0 120 36" className="h-full w-full" preserveAspectRatio="none" aria-hidden>
-      <path d="M2,30 L20,26 L38,28 L56,18 L74,21 L92,10 L118,6 L118,36 L2,36 Z" fill="currentColor" opacity="0.12" />
-      <path d="M2,30 L20,26 L38,28 L56,18 L74,21 L92,10 L118,6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-      <circle cx="118" cy="6" r="3" fill="currentColor" />
-    </svg>
-  );
+/** The square at the head of an insight card: a tiny trend line where there is a trend, an icon where there isn't. */
+function Glyph({ kind }: { kind: GlyphKind }) {
+  const common = { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+  if (kind === "down") return <svg {...common}><polyline points="3 7 9 12 13 9 21 17" /><polyline points="15 17 21 17 21 11" /></svg>;
+  if (kind === "up") return <svg {...common}><polyline points="3 17 9 12 13 15 21 7" /><polyline points="15 7 21 7 21 13" /></svg>;
+  if (kind === "percent") return <svg {...common}><line x1="19" y1="5" x2="5" y2="19" /><circle cx="7" cy="7" r="2.5" /><circle cx="17" cy="17" r="2.5" /></svg>;
+  if (kind === "share") return <svg {...common}><path d="M12 3a9 9 0 1 0 9 9h-9z" /><path d="M15 3.5A9 9 0 0 1 20.5 9H15z" /></svg>;
+  return <svg {...common}><path d="M4 20V10l8-6 8 6v10" /><path d="M9 20v-6h6v6" /></svg>;
 }

@@ -28,6 +28,7 @@ export default function Stage() {
   const [prov, setProv] = useState<Prov | null>(null);
   // "Reply in English instead" holds for the rest of the thread until undone
   const [replyLock, setReplyLock] = useState<null | "en">(null);
+  const [showContinue, setShowContinue] = useState(true);
   // The text sheet sits over whichever full screen opened it
   const [base, setBase] = useState<"landing" | "answer">("landing");
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -136,6 +137,7 @@ export default function Stage() {
 
   const restart = () => {
     newChat();
+    setShowContinue(true);
     setRunKey((k) => k + 1);
   };
 
@@ -218,7 +220,7 @@ export default function Stage() {
           <div className="frame" key={runKey}>
             <div className="ambient-glow" aria-hidden />
             {showing === "landing" && (
-              <Landing go={go} ask={ask} resume={resume} openText={(d) => { setDraft(d); go("text"); }} />
+              <Landing go={go} ask={ask} resume={resume} openText={(d) => { setDraft(d); go("text"); }} showContinue={showContinue} onDismissContinue={() => setShowContinue(false)} />
             )}
             {showing === "answer" && (
               <Answer

@@ -16,7 +16,15 @@ export type Inferred = Extract<Seg, { kind: "inferred" }>;
 export const isInferred = (s: Seg | null | undefined): s is Inferred =>
   !!s && "kind" in s && s.kind === "inferred";
 
-export type Listing = { name: string; meta: string; price: string; img: string };
+export type Listing = {
+  /** Canonical Latin name — what is on the building, the contract and the map. Never translated away. */
+  name: string;
+  /** The name in the reply language, shown first; the Latin name stays beneath it. */
+  local?: string;
+  meta: string;
+  price: string;
+  img: string;
+};
 export type Refine = { label: string; delta: number };
 
 export type Script = {
@@ -27,11 +35,20 @@ export type Script = {
   alt?: Script;
   count: number;
   noun: string;
+  /** Arabic counts 3-10 take the plural (٤ شقق); 11 and up take the singular (٢٣ شقة). */
+  nounFew?: string;
   segs: Seg[];
   listings: Listing[];
   refine: Refine[];
   thinking: string[];
 };
+
+/** The right noun form for a count. Only Arabic changes form here. */
+export function nounFor(s: Pick<Script, "lang" | "noun" | "nounFew">, n: number): string {
+  if (s.lang !== "ar" || !s.nounFew) return s.noun;
+  const m = n % 100;
+  return m >= 3 && m <= 10 ? s.nounFew : s.noun;
+}
 
 const cite = (n: number): Seg => ({ t: String(n), kind: "cite" });
 
@@ -189,9 +206,9 @@ const SEA_ZH: Script = {
     { t: "的房源。先看这三套 " }, cite(1), cite(2), cite(3), { t: "。" },
   ],
   listings: [
-    { name: "The Zen Tower", meta: "2 室 · 1,474 平方英尺 · 现房", price: "AED 1.7M", img: "/listings/zen-tower.jpg" },
-    { name: "Marina Crown", meta: "2 室 · 1,494 平方英尺 · 现房", price: "AED 1.9M", img: "/listings/marina-crown.jpg" },
-    { name: "Marina Diamond 2", meta: "2 室 · 1,355 平方英尺 · 现房", price: "AED 1.6M", img: "/listings/marina-diamond.jpg" },
+    { name: "The Zen Tower", local: "禅意大厦", meta: "2 室 · 1,474 平方英尺 · 现房", price: "170 万迪拉姆", img: "/listings/zen-tower.jpg" },
+    { name: "Marina Crown", local: "码头皇冠大厦", meta: "2 室 · 1,494 平方英尺 · 现房", price: "190 万迪拉姆", img: "/listings/marina-crown.jpg" },
+    { name: "Marina Diamond 2", local: "码头钻石 2 号", meta: "2 室 · 1,355 平方英尺 · 现房", price: "160 万迪拉姆", img: "/listings/marina-diamond.jpg" },
   ],
   refine: [{ label: "预算放宽到 220 万", delta: 21 }, { label: "只看带家具的", delta: -30 }, { label: "避开低楼层", delta: -12 }],
 };
@@ -218,20 +235,20 @@ const THREE_EN: Script = {
 };
 
 const THREE_AR: Script = {
-  id: "three-ar", lang: "ar", count: 23, noun: "شقة",
+  id: "three-ar", lang: "ar", count: 23, noun: "شقة", nounFew: "شقق",
   thinking: ["أقرأ سؤالك", "أبحث في بروبرتي فايندر", "أرتّب 23 شقة"],
   segs: [
-    { t: "وجدت 23 شقة بـ" }, { t: "ثلاث غرف", kind: "stated" },
+    { t: "وجدت 23 شقة مكوّنة من " }, { t: "ثلاث غرف", kind: "stated" },
     { t: " في " }, { t: "دبي مارينا", kind: "stated" },
-    { t: " بـ" }, { t: "إطلالة بحرية", kind: "stated" }, { t: "، " }, { t: "جاهزة هذا العام", kind: "stated" },
+    { t: " مع " }, { t: "إطلالة بحرية", kind: "stated" }, { t: "، و" }, { t: "جاهزة هذا العام", kind: "stated" },
     { t: ". " },
     { t: "رفعتُ الميزانية إلى 2.8 مليون", kind: "inferred", from: "ثلاث غرف", why: "قلتَ سابقاً «under 2M». رفع سكاوت الميزانية من تلقاء نفسه ليجد شققاً بثلاث غرف. أنت لم تطلب ذلك.", without: 4 },
-    { t: " لأن شقق الثلاث غرف نادرة تحت 2 مليون. إليك ثلاثاً منها " }, cite(1), cite(2), cite(3), { t: "." },
+    { t: " لأن الشقق ذات الثلاث غرف نادرة بأقل من 2 مليون. إليك ثلاثاً منها " }, cite(1), cite(2), cite(3), { t: "." },
   ],
   listings: [
-    { name: "Marina Gate 1", meta: "3 غرف · 1,890 قدم² · جاهزة", price: "AED 2.7M", img: "/listings/marina-crown.jpg" },
-    { name: "Damac Heights", meta: "3 غرف · 1,760 قدم² · جاهزة", price: "AED 2.6M", img: "/listings/zen-tower.jpg" },
-    { name: "Marina Promenade", meta: "3 غرف · 1,820 قدم² · جاهزة", price: "AED 2.8M", img: "/listings/marina-diamond.jpg" },
+    { name: "Marina Gate 1", local: "مارينا جيت 1", meta: "3 غرف · 1,890 قدم² · جاهزة", price: "2.7 مليون درهم", img: "/listings/marina-crown.jpg" },
+    { name: "Damac Heights", local: "داماك هايتس", meta: "3 غرف · 1,760 قدم² · جاهزة", price: "2.6 مليون درهم", img: "/listings/zen-tower.jpg" },
+    { name: "Marina Promenade", local: "مارينا بروميناد", meta: "3 غرف · 1,820 قدم² · جاهزة", price: "2.8 مليون درهم", img: "/listings/marina-diamond.jpg" },
   ],
   refine: [{ label: "العودة إلى أقل من 2 مليون", delta: -19 }, { label: "موقفان للسيارات", delta: -9 }, { label: "طابق مرتفع فقط", delta: -11 }],
 };
@@ -277,12 +294,14 @@ const lowerFirst = (t: string, lang: Lang) => (lang === "en" ? t.charAt(0).toLow
 export function refineScript(base: Script, r: Refine): Script {
   const L = STR[base.lang];
   const next = Math.max(3, base.count + r.delta);
-  const tail = r.delta === 0 ? L.resorted(r.label, base.count, base.noun) : L.refined(r.label, base.count, next, base.noun);
+  const tail = r.delta === 0
+    ? L.resorted(r.label, base.count, nounFor(base, base.count))
+    : L.refined(r.label, base.count, next, nounFor(base, next));
   return {
     ...base,
     alt: undefined,
     count: next,
-    thinking: L.thinkingRefine(next, base.noun),
+    thinking: L.thinkingRefine(next, nounFor(base, next)),
     segs: [
       { t: DONE[base.lang] },
       { t: lowerFirst(r.label, base.lang), kind: "stated" },
@@ -308,11 +327,11 @@ export function unsayScript(base: Script, segIndex: number): { q: string; script
       ...base,
       alt: undefined,
       count: seg.without,
-      thinking: L.thinkingUnsay(seg.without, base.noun),
+      thinking: L.thinkingUnsay(seg.without, nounFor(base, seg.without)),
       segs: [
         { t: STOPPED[base.lang] },
         { t: L.quote(seg.t) },
-        { t: L.unsaid(seg.t, seg.without, base.noun, change) },
+        { t: L.unsaid(seg.t, seg.without, nounFor(base, seg.without), change) },
         cite(1), cite(2), cite(3),
         { t: base.lang === "zh" ? "。" : "." },
       ],

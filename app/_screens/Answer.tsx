@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { Go } from "../_lib/types";
-import { isInferred, type Inferred, type Refine, type Script, type Seg } from "../_lib/scripts";
+import { isInferred, nounFor, type Inferred, type Refine, type Script, type Seg } from "../_lib/scripts";
 import { STR, chipLabel, isRtl, langName, type Lang } from "../_lib/i18n";
 import { StatusBar } from "../_components/Chrome";
 import ComposerBar from "../_components/ComposerBar";
@@ -190,7 +190,7 @@ function TurnBlock({
 
       {/* Provenance card — sits right under the prose it explains */}
       {isInferred(active) && activeSeg !== null && (
-        <ProvCard seg={active} lang={script.lang} noun={script.noun} count={script.count} onKeep={onCloseProv} onUnsay={() => onUnsay(activeSeg)} />
+        <ProvCard seg={active} lang={script.lang} noun={nounFor(script, active.without)} count={script.count} onKeep={onCloseProv} onUnsay={() => onUnsay(activeSeg)} />
       )}
 
       {phase === "done" && (
@@ -211,7 +211,9 @@ function TurnBlock({
                     <span className="absolute start-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] font-bold tabular-nums text-bg">{i + 1}</span>
                   </div>
                   <div className="px-3 pb-3 pt-2.5">
-                    <p className="truncate text-[13px] font-semibold text-ink">{l.name}</p>
+                    <p className="truncate text-[13px] font-semibold text-ink">{l.local ?? l.name}</p>
+                    {/* The Latin name is what is on the building and the contract, so it stays */}
+                    {l.local && <p dir="ltr" lang="en" className="truncate text-start text-[11px] text-muted-2">{l.name}</p>}
                     <p className="mt-0.5 truncate text-[12px] text-muted">{l.meta}</p>
                     <p className="mt-1 text-[14px] font-semibold tabular-nums text-ink">{l.price}</p>
                   </div>
