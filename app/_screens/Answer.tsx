@@ -576,16 +576,17 @@ function AllListings({ turn, onClose, onDig }: { turn: Turn; onClose: () => void
             <li key={l.name} className="border-b border-border last:border-b-0">
               <button type="button" onClick={() => leave(() => onDig(i))} aria-label={`${i + 1}. ${short} · ${L.digDeeper}`} className="group flex w-full items-center gap-3 py-3 text-start">
                 <span className="relative h-[60px] w-[84px] shrink-0 overflow-hidden rounded-[10px]">
-                  <ListingPhoto src={l.img} alt="" />
+                  <ListingPhoto src={l.img} alt="" eager />
                   <span className="absolute start-1 top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold tabular-nums text-bg">{i + 1}</span>
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5">
-                    <span className="truncate text-[14px] font-semibold text-ink">{l.local ?? l.name}</span>
+                  {/* The name gets the whole line; status rides with the price so it never squeezes it */}
+                  <span className="block truncate text-[14px] font-semibold text-ink">{l.local ?? l.name}</span>
+                  <span className="block truncate text-[12px] text-muted">{l.meta}</span>
+                  <span className="mt-0.5 flex items-center gap-2">
+                    <span className="text-[13px] font-semibold tabular-nums text-ink">{l.price}</span>
                     {l.status && <span className="shrink-0 rounded-full bg-accent-tint px-1.5 py-px text-[10px] font-semibold text-accent">{l.status}</span>}
                   </span>
-                  <span className="block truncate text-[12px] text-muted">{l.meta}</span>
-                  <span className="block text-[13px] font-semibold tabular-nums text-ink">{l.price}</span>
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted transition-colors group-hover:text-accent rtl:rotate-180" aria-hidden><polyline points="9 6 15 12 9 18" /></svg>
               </button>
