@@ -15,6 +15,16 @@ const POINTS = Array.from({ length: N }, (_, i) => {
   return { x: Math.cos(th) * r, y, z: Math.sin(th) * r, ph: (i * 12.9898) % (Math.PI * 2) };
 });
 
+// --gradient-brand, sampled: purple on the left of the sphere, red on the right
+const FROM = [0x73, 0x63, 0xba];
+const TO = [0xd2, 0x41, 0x2b];
+const STEPS = 24;
+const RAMP = Array.from({ length: STEPS }, (_, i) => {
+  const t = i / (STEPS - 1);
+  const c = FROM.map((f, k) => Math.round(f + (TO[k] - f) * t));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+});
+
 /**
  * Scout's voice presence: a particle sphere that breathes with the speaker.
  * Listening = lively, paused = holding its breath, settled = calm.
@@ -39,13 +49,9 @@ export default function Sphere({ mode, size = 232 }: { mode: SphereMode; size?: 
     let raf = 0;
     let angle = 0;
     let energy = 0; // eased towards the target for the current mode
-    let color = getComputedStyle(canvas).color;
-    let frame = 0;
 
     const draw = (t: number) => {
       const m = modeRef.current;
-      if (frame++ % 40 === 0) color = getComputedStyle(canvas).color; // follow theme changes
-
       const target = m === "listening" ? 1 : m === "paused" ? 0.12 : 0;
       energy += (target - energy) * 0.06;
 
@@ -61,8 +67,6 @@ export default function Sphere({ mode, size = 232 }: { mode: SphereMode; size?: 
       const R = size * 0.36 * (1 + level * 0.1);
 
       ctx.clearRect(0, 0, size, size);
-      ctx.fillStyle = color;
-
       for (const p of POINTS) {
         const wob = 1 + level * 0.16 * Math.sin(s * 6 + p.ph);
         // rotate around Y, then tilt around X
@@ -73,7 +77,10 @@ export default function Sphere({ mode, size = 232 }: { mode: SphereMode; size?: 
         const z2 = y1 * sinT + z1 * cosT;
 
         const depth = (z2 + 1.2) / 2.4; // 0 back → 1 front
-        ctx.globalAlpha = 0.18 + depth * 0.72;
+        // colour follows the particle's position across the sphere, so the gradient holds as it turns
+        const t = Math.max(0, Math.min(1, (x1 / wob + 1) / 2));
+        ctx.fillStyle = RAMP[Math.round(t * (STEPS - 1))];
+        ctx.globalAlpha = 0.22 + depth * 0.74;
         const d = 0.7 + depth * 1.5;
         ctx.beginPath();
         ctx.arc(c + x1 * R, c + y2 * R, d, 0, Math.PI * 2);
@@ -87,5 +94,5 @@ export default function Sphere({ mode, size = 232 }: { mode: SphereMode; size?: 
     return () => cancelAnimationFrame(raf);
   }, [size]);
 
-  return <canvas ref={ref} style={{ width: size, height: size }} className="text-accent" aria-hidden />;
+  return <canvas ref={ref} style={{ width: size, height: size }} aria-hidden />;
 }
