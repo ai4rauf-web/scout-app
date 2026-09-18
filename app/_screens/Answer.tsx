@@ -360,10 +360,10 @@ function ProvCard({
         <p className="mt-2 text-[13px] leading-[1.5] text-ink-2">{seg.why}</p>
 
         <div className="mt-4 flex items-center gap-2">
-          <button type="button" onClick={onUnsay} className="h-10 rounded-full bg-accent px-4 text-[13px] font-semibold text-bg shadow-[var(--shadow-2)] transition-transform active:scale-95">
+          <button type="button" onClick={onUnsay} className="min-h-10 min-w-0 rounded-full bg-accent px-4 py-2 text-[13px] leading-[1.25] font-semibold text-bg shadow-[var(--shadow-2)] transition-transform active:scale-95">
             {L.unsay(seg.t)}
           </button>
-          <button type="button" onClick={onKeep} className="h-10 rounded-full px-3 text-[13px] font-semibold text-muted transition-colors hover:text-ink">
+          <button type="button" onClick={onKeep} className="h-10 shrink-0 whitespace-nowrap rounded-full px-3 text-[13px] font-semibold text-muted transition-colors hover:text-ink">
             {L.keep}
           </button>
         </div>
