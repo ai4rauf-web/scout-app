@@ -5,7 +5,7 @@ import type { Go } from "../_lib/types";
 import { isInferred, type Inferred, type Refine, type Script, type Seg } from "../_lib/scripts";
 import { StatusBar } from "../_components/Chrome";
 import ComposerBar from "../_components/ComposerBar";
-import ListingArt from "../_components/ListingArt";
+import ListingPhoto from "../_components/ListingPhoto";
 
 export type Turn = { id: number; q: string; script: Script; done: boolean; unsaid?: number[] };
 export type Prov = { turnId: number; seg: number };
@@ -177,7 +177,7 @@ function TurnBlock({
               {script.listings.map((l, i) => (
                 <div key={l.name} className="w-[228px] shrink-0 snap-start overflow-hidden rounded-[16px] border border-border bg-bg-elev shadow-[var(--shadow-1)]">
                   <div className="relative h-[112px]">
-                    <ListingArt variant={l.art} uid={`${turn.id}-${i}`} />
+                    <ListingPhoto src={l.img} alt={l.name} />
                     <span className="absolute left-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] font-bold tabular-nums text-bg">{i + 1}</span>
                   </div>
                   <div className="px-3 pb-3 pt-2.5">

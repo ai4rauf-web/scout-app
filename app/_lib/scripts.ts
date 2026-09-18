@@ -14,7 +14,7 @@ export type Inferred = Extract<Seg, { kind: "inferred" }>;
 export const isInferred = (s: Seg | null | undefined): s is Inferred =>
   !!s && "kind" in s && s.kind === "inferred";
 
-export type Listing = { name: string; meta: string; price: string; art: number };
+export type Listing = { name: string; meta: string; price: string; img: string };
 export type Refine = { label: string; delta: number };
 
 export type Script = {
@@ -58,9 +58,9 @@ const LAUNCH: Script = {
     { t: "." },
   ],
   listings: [
-    { name: "Golf Views · Emaar South", meta: "2 BR · 1,474 sqft · 2027", price: "AED 1.7M", art: 0 },
-    { name: "Greenway · Emaar South", meta: "2 BR · 1,210 sqft · 2027", price: "AED 1.4M", art: 2 },
-    { name: "Golf Lane · Emaar South", meta: "3 BR · 1,620 sqft · 2027", price: "AED 1.9M", art: 1 },
+    { name: "Golf Views · Emaar South", meta: "2 BR · 1,474 sqft · 2027", price: "AED 1.7M", img: "/listings/golf-views.jpg" },
+    { name: "Greenway · Emaar South", meta: "2 BR · 1,210 sqft · 2027", price: "AED 1.4M", img: "/listings/greenway.jpg" },
+    { name: "Golf Lane · Emaar South", meta: "3 BR · 1,620 sqft · 2027", price: "AED 1.9M", img: "/listings/golf-lane.jpg" },
   ],
   refine: [
     { label: "Widen budget to 2.2M", delta: 9 },
@@ -96,9 +96,9 @@ const READY: Script = {
     { t: "." },
   ],
   listings: [
-    { name: "The Zen Tower", meta: "2 BR · 1,474 sqft · Ready", price: "AED 1.7M", art: 1 },
-    { name: "Marina Crown", meta: "2 BR · 1,494 sqft · Ready", price: "AED 1.9M", art: 0 },
-    { name: "Marina Diamond 2", meta: "2 BR · 1,355 sqft · Ready", price: "AED 1.6M", art: 2 },
+    { name: "The Zen Tower", meta: "2 BR · 1,474 sqft · Ready", price: "AED 1.7M", img: "/listings/zen-tower.jpg" },
+    { name: "Marina Crown", meta: "2 BR · 1,494 sqft · Ready", price: "AED 1.9M", img: "/listings/marina-crown.jpg" },
+    { name: "Marina Diamond 2", meta: "2 BR · 1,355 sqft · Ready", price: "AED 1.6M", img: "/listings/marina-diamond.jpg" },
   ],
   refine: [
     { label: "Widen budget to 2.2M", delta: 38 },
@@ -132,9 +132,9 @@ const VILLA: Script = {
     { t: "." },
   ],
   listings: [
-    { name: "Joy · Arabian Ranches III", meta: "3 BR · 2,100 sqft · Ready", price: "AED 3.2M", art: 2 },
-    { name: "Maple · Dubai Hills", meta: "3 BR · 2,240 sqft · Ready", price: "AED 3.6M", art: 0 },
-    { name: "Mira Oasis", meta: "3 BR · 2,020 sqft · Ready", price: "AED 2.9M", art: 1 },
+    { name: "Joy · Arabian Ranches III", meta: "3 BR · 2,100 sqft · Ready", price: "AED 3.2M", img: "/listings/joy-ranches.jpg" },
+    { name: "Maple · Dubai Hills", meta: "3 BR · 2,240 sqft · Ready", price: "AED 3.6M", img: "/listings/maple-hills.jpg" },
+    { name: "Mira Oasis", meta: "3 BR · 2,020 sqft · Ready", price: "AED 2.9M", img: "/listings/mira-oasis.jpg" },
   ],
   refine: [
     { label: "Only gated communities", delta: -22 },

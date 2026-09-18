@@ -5,7 +5,7 @@ import type { Go } from "../_lib/types";
 import { StatusBar, FillArrow, Chevron } from "../_components/Chrome";
 import ComposerBar from "../_components/ComposerBar";
 import ThemeToggle from "../_components/ThemeToggle";
-import ListingArt from "../_components/ListingArt";
+import ListingPhoto from "../_components/ListingPhoto";
 
 const USER = "Rauf";
 
@@ -16,9 +16,9 @@ function greetingFor(h: number) {
 }
 
 const FEATURED = [
-  { name: "Golf Views · Emaar South", meta: "2 BR · 1,474 sqft", price: "AED 1.7M", sponsored: false, art: 0 },
-  { name: "Marina Crown", meta: "2 BR · 1,494 sqft", price: "AED 1.9M", sponsored: true, art: 1 },
-  { name: "Greenway · Emaar South", meta: "3 BR · 1,810 sqft", price: "AED 2.4M", sponsored: false, art: 2 },
+  { name: "Golf Views · Emaar South", meta: "2 BR · 1,474 sqft", price: "AED 1.7M", sponsored: false, img: "/listings/golf-views.jpg" },
+  { name: "Marina Crown", meta: "2 BR · 1,494 sqft", price: "AED 1.9M", sponsored: true, img: "/listings/marina-crown.jpg" },
+  { name: "Greenway · Emaar South", meta: "3 BR · 1,810 sqft", price: "AED 2.4M", sponsored: false, img: "/listings/greenway.jpg" },
 ];
 
 const PROMPTS = [
@@ -113,7 +113,7 @@ export default function Landing({
                 className="w-[212px] shrink-0 snap-start overflow-hidden rounded-[16px] border border-border bg-bg-elev text-left shadow-[var(--shadow-1)] transition-shadow hover:shadow-[var(--shadow-2)] active:scale-[0.99]"
               >
                 <div className="relative h-[104px] w-full overflow-hidden">
-                  <ListingArt variant={f.art} uid={`feat-${f.art}`} />
+                  <ListingPhoto src={f.img} alt={f.name} />
                   {f.sponsored && (
                     <span className="absolute left-2 top-2 rounded-full bg-bg-elev/90 px-2 py-[2px] text-[9px] font-semibold uppercase tracking-[0.08em] text-muted">
                       Sponsored
