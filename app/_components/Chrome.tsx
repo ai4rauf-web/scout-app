@@ -51,3 +51,31 @@ export function Chevron() {
     </svg>
   );
 }
+
+/**
+ * A still keyboard for the desktop frame, so the sheet keeps its phone
+ * proportions. Hidden on real phones, which bring their own.
+ */
+export function SimKeyboard() {
+  const rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+  return (
+    <div className="sim-only shrink-0 select-none bg-accent-tint px-1.5 pb-8 pt-2" aria-hidden>
+      {rows.map((r, i) => (
+        <div key={r} className="mb-2 flex justify-center gap-[5px]" style={{ paddingInline: i === 1 ? 16 : 0 }}>
+          {i === 2 && <span className="mr-1 h-[38px] w-[40px] rounded-[6px] bg-accent-soft" />}
+          {r.split("").map((k) => (
+            <span key={k} className="grid h-[38px] flex-1 place-items-center rounded-[6px] bg-bg-elev text-[15px] text-ink shadow-[var(--shadow-1)]">
+              {k}
+            </span>
+          ))}
+          {i === 2 && <span className="ml-1 h-[38px] w-[40px] rounded-[6px] bg-accent-soft" />}
+        </div>
+      ))}
+      <div className="flex gap-[5px]">
+        <span className="grid h-[38px] w-[84px] place-items-center rounded-[6px] bg-accent-soft text-[13px] text-ink">123</span>
+        <span className="grid h-[38px] flex-1 place-items-center rounded-[6px] bg-bg-elev text-[13px] text-muted shadow-[var(--shadow-1)]">space</span>
+        <span className="grid h-[38px] w-[84px] place-items-center rounded-[6px] bg-accent-soft text-[13px] text-ink">return</span>
+      </div>
+    </div>
+  );
+}

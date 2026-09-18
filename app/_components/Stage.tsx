@@ -5,6 +5,12 @@ import { SCREENS, type Screen } from "../_lib/types";
 import ThemeToggle from "./ThemeToggle";
 import Landing from "../_screens/Landing";
 import Placeholder from "../_screens/Placeholder";
+import TextSheet from "../_screens/TextSheet";
+import Answer, { type Turn } from "../_screens/Answer";
+import { pickScript, refineScript, type Refine } from "../_lib/scripts";
+
+const DEFAULT_Q = "New Emaar launches in Dubai South under 2M";
+let turnSeq = 1;
 
 const FRAME_W = 375;
 const FRAME_H = 812;
@@ -13,6 +19,10 @@ export default function Stage() {
   const [screen, setScreen] = useState<Screen>("landing");
   const [runKey, setRunKey] = useState(0);
   const [scale, setScale] = useState(1);
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [draft, setDraft] = useState("");
+  // The text sheet sits over whichever full screen opened it
+  const [base, setBase] = useState<"landing" | "answer">("landing");
   const stageRef = useRef<HTMLDivElement | null>(null);
 
   // Fit mode: the frame keeps its true 375 × 812 layout and scales as a whole.
@@ -30,11 +40,47 @@ export default function Stage() {
     return () => window.removeEventListener("resize", fit);
   }, []);
 
-  const go = (s: Screen) => setScreen(s);
-  const restart = () => {
+  const makeTurn = (q: string, done = false): Turn => ({ id: turnSeq++, q, script: pickScript(q), done });
+
+  const go = (s: Screen) => {
+    if (s === "landing" || s === "answer") setBase(s);
+    // Arriving at the answer with nothing asked yet: resume a finished thread
+    if (s === "answer" && turns.length === 0) setTurns([makeTurn(DEFAULT_Q, true)]);
+    setScreen(s);
+  };
+
+  const ask = (q: string) => {
+    setDraft("");
+    setTurns((t) => [...t, makeTurn(q)]);
+    setBase("answer");
+    setScreen("answer");
+  };
+
+  const resume = (q: string) => {
+    setTurns([makeTurn(q, true)]);
+    setBase("answer");
+    setScreen("answer");
+  };
+
+  const refine = (turn: Turn, r: Refine) =>
+    setTurns((t) => [...t, { id: turnSeq++, q: r.label, script: refineScript(turn.script, r), done: false }]);
+
+  const markDone = (id: number) =>
+    setTurns((t) => t.map((x) => (x.id === id ? { ...x, done: true } : x)));
+
+  const newChat = () => {
+    setTurns([]);
+    setDraft("");
+    setBase("landing");
     setScreen("landing");
+  };
+
+  const restart = () => {
+    newChat();
     setRunKey((k) => k + 1);
   };
+
+  const showing = screen === "text" ? base : screen;
 
   return (
     <div ref={stageRef} className="stage text-ink">
@@ -110,10 +156,31 @@ export default function Stage() {
         <div className="frame-slot">
           <div className="frame" key={runKey}>
             <div className="ambient-glow" aria-hidden />
-            {screen === "landing" ? (
-              <Landing go={go} />
-            ) : (
-              <Placeholder screen={screen} go={go} />
+            {showing === "landing" && (
+              <Landing go={go} ask={ask} resume={resume} openText={(d) => { setDraft(d); go("text"); }} />
+            )}
+            {showing === "answer" && (
+              <Answer
+                turns={turns}
+                go={go}
+                onTurnDone={markDone}
+                onRefine={refine}
+                onFollowUp={() => go("text")}
+                onVoice={() => go("voice")}
+                onNewChat={newChat}
+                onProvenance={() => go("provenance")}
+              />
+            )}
+            {showing !== "landing" && showing !== "answer" && <Placeholder screen={showing} go={go} />}
+            {screen === "text" && (
+              <TextSheet
+                draft={draft}
+                setDraft={setDraft}
+                followUp={base === "answer"}
+                onClose={() => setScreen(base)}
+                onSend={ask}
+                onVoice={() => go("voice")}
+              />
             )}
             <div
               className="home-indicator pointer-events-none absolute bottom-2 left-1/2 z-50 h-[5px] w-[134px] -translate-x-1/2 rounded-full bg-ink/80"

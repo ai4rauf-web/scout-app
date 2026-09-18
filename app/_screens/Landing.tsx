@@ -5,6 +5,7 @@ import type { Go } from "../_lib/types";
 import { StatusBar, FillArrow, Chevron } from "../_components/Chrome";
 import ComposerBar from "../_components/ComposerBar";
 import ThemeToggle from "../_components/ThemeToggle";
+import ListingArt from "../_components/ListingArt";
 
 const USER = "Rauf";
 
@@ -28,7 +29,14 @@ const PROMPTS = [
 
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
-export default function Landing({ go }: { go: Go }) {
+export default function Landing({
+  go, ask, resume, openText,
+}: {
+  go: Go;
+  ask: (q: string) => void;
+  resume: (q: string) => void;
+  openText: (draft: string) => void;
+}) {
   const [hour, setHour] = useState(19);
   useEffect(() => setHour(new Date().getHours()), []);
 
@@ -77,7 +85,7 @@ export default function Landing({ go }: { go: Go }) {
         <section className="rise px-5 pt-5" style={d(60)}>
           <button
             type="button"
-            onClick={() => go("answer")}
+            onClick={() => resume("3BR villa in JLT under 5M")}
             className="group flex w-full items-center gap-3 rounded-[14px] border border-border bg-bg-elev py-3 pl-3 pr-3 text-left shadow-[var(--shadow-1)] transition-shadow hover:shadow-[var(--shadow-2)] active:scale-[0.99]"
           >
             <span className="h-9 w-[3px] shrink-0 rounded-full bg-accent" aria-hidden />
@@ -101,11 +109,11 @@ export default function Landing({ go }: { go: Go }) {
               <button
                 key={f.name}
                 type="button"
-                onClick={() => go("answer")}
+                onClick={() => ask(`Tell me about ${f.name}`)}
                 className="w-[212px] shrink-0 snap-start overflow-hidden rounded-[16px] border border-border bg-bg-elev text-left shadow-[var(--shadow-1)] transition-shadow hover:shadow-[var(--shadow-2)] active:scale-[0.99]"
               >
                 <div className="relative h-[104px] w-full overflow-hidden">
-                  <ListingArt variant={f.art} />
+                  <ListingArt variant={f.art} uid={`feat-${f.art}`} />
                   {f.sponsored && (
                     <span className="absolute left-2 top-2 rounded-full bg-bg-elev/90 px-2 py-[2px] text-[9px] font-semibold uppercase tracking-[0.08em] text-muted">
                       Sponsored
@@ -134,7 +142,7 @@ export default function Landing({ go }: { go: Go }) {
               value="−2.1%"
               tone="negative"
               chart={<Bars />}
-              onTap={() => go("answer")}
+              onTap={() => ask("Why did Dubai Marina prices drop this month?")}
             />
             <Insight
               title="Dubai South"
@@ -142,7 +150,7 @@ export default function Landing({ go }: { go: Go }) {
               value="+29"
               tone="positive"
               chart={<Line />}
-              onTap={() => go("answer")}
+              onTap={() => ask("Show me the new launches in Dubai South")}
             />
           </div>
         </section>
@@ -152,16 +160,17 @@ export default function Landing({ go }: { go: Go }) {
           <Label>Try asking</Label>
           <ul className="mt-1">
             {PROMPTS.map((p) => (
-              <li key={p} className="border-b border-border last:border-b-0">
+              <li key={p} className="flex items-center border-b border-border last:border-b-0">
+                <button type="button" onClick={() => ask(p)} className="min-w-0 flex-1 py-3.5 text-left text-[14px] text-ink-2 transition-colors hover:text-ink">
+                  {p}
+                </button>
                 <button
                   type="button"
-                  onClick={() => go("text")}
-                  className="group flex w-full items-center justify-between gap-3 py-3.5 text-left"
+                  onClick={() => openText(p)}
+                  aria-label={`Edit “${p}” before asking`}
+                  className="grid h-11 w-11 shrink-0 place-items-center text-muted-2 transition-colors hover:text-accent"
                 >
-                  <span className="text-[14px] text-ink-2 transition-colors group-hover:text-ink">{p}</span>
-                  <span className="shrink-0 text-muted-2 transition-colors group-hover:text-accent">
-                    <FillArrow />
-                  </span>
+                  <FillArrow />
                 </button>
               </li>
             ))}
@@ -227,37 +236,6 @@ function Line() {
       <path d="M2,30 L20,26 L38,28 L56,18 L74,21 L92,10 L118,6 L118,36 L2,36 Z" fill="currentColor" opacity="0.12" />
       <path d="M2,30 L20,26 L38,28 L56,18 L74,21 L92,10 L118,6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
       <circle cx="118" cy="6" r="3" fill="currentColor" />
-    </svg>
-  );
-}
-
-/** Duotone skyline in the Scout purple family — stands in until real listing photos arrive. */
-function ListingArt({ variant }: { variant: number }) {
-  const skylines = [
-    [[8, 58, 22], [34, 40, 18], [56, 66, 26], [86, 30, 20], [110, 52, 24], [138, 44, 18], [160, 62, 28], [192, 48, 20]],
-    [[4, 46, 20], [28, 24, 16], [48, 56, 22], [74, 16, 18], [96, 38, 22], [122, 60, 26], [152, 28, 18], [174, 50, 24], [200, 40, 14]],
-    [[10, 70, 40], [56, 62, 36], [98, 74, 44], [148, 64, 34], [186, 72, 30]],
-  ][variant % 3];
-  const id = `sky${variant}`;
-  return (
-    <svg viewBox="0 0 212 104" className="h-full w-full" preserveAspectRatio="xMidYMid slice" aria-hidden>
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#D1CFED" />
-          <stop offset="1" stopColor="#E7E5F4" />
-        </linearGradient>
-      </defs>
-      <rect width="212" height="104" fill={`url(#${id})`} />
-      <circle cx={variant === 1 ? 168 : 44} cy="30" r="14" fill="#F7F7FC" opacity="0.9" />
-      {skylines.map(([x, y, w], i) => (
-        <g key={i}>
-          <rect x={x} y={y} width={w} height={104 - y} fill={i % 2 ? "#6459B2" : "#3A307F"} opacity={i % 2 ? 0.75 : 0.9} />
-          {Array.from({ length: Math.floor((104 - y - 8) / 9) }).map((_, r) => (
-            <rect key={r} x={x + 3} y={y + 5 + r * 9} width={w - 6} height="2" fill="#F7F7FC" opacity="0.28" />
-          ))}
-        </g>
-      ))}
-      <rect y="96" width="212" height="8" fill="#2C255E" opacity="0.9" />
     </svg>
   );
 }
